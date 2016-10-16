@@ -42,8 +42,8 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 				continue
 			}
 
-			min_avg = math.Min(hist.Avg, min_avg)
-			max_avg = math.Max(hist.Avg, max_avg)
+			min_avg = math.Min(hist.Mean(), min_avg)
+			max_avg = math.Max(hist.Mean(), max_avg)
 		}
 
 		// CALCULATE THE VARIANCE BETWEEN GROUPS AND WITHIN GROUPS
@@ -70,7 +70,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 			sum_of_squares_within += float64(variance)
 
 			// for calculating ss between groups
-			between_groups.addWeightedValue(int64(hist.Avg), hist.Count)
+			between_groups.addWeightedValue(int64(hist.Mean()), hist.TotalCount())
 		}
 
 		icc := 1.0
@@ -78,7 +78,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		if K > 1 {
 			mean_between_variance := between_groups.GetVariance() / float64(K-1)
 
-			ss_within_count := float64(cumulative.Count - int64(K))
+			ss_within_count := float64(cumulative.TotalCount() - int64(K))
 			mean_within_variance := sum_of_squares_within / ss_within_count
 
 			icc = (mean_between_variance) / (mean_between_variance + mean_within_variance)

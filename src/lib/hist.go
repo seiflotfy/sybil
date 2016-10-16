@@ -5,8 +5,32 @@ import "math"
 import "sort"
 import "strconv"
 
+import "github.com/codahale/hdrhistogram"
+
 var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false
+
+type TableHist struct {
+  *hdrhistogram.Histogram
+
+  table *Table
+  info  *IntInfo
+}
+
+func (th *TableHist) GetVariance() float64 {
+  std := th.StdDev()
+  return std * std;
+}
+
+func (th *TableHist) GetPercentiles() []int64 {
+
+  ret := make([]int64, 100);
+  for i := 0; i < 100; i++ {
+    ret[i] = th.ValueAtQuantile(float64(i))
+  }
+
+  return ret
+}
 
 type Hist struct {
 	Max     int64
@@ -66,15 +90,13 @@ func (h *Hist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func (t *Table) NewHist(info *IntInfo) *Hist {
+func (t *Table) NewHist(info *IntInfo) *TableHist {
 
-	h := &Hist{}
-	h.table = t
-	h.info = info
+        log.Println("MAKING NEW HIST", info.Min, info.Max, info.Max * 2, 3);
+	hdr_hist := hdrhistogram.New(info.Min, info.Max * 2, 5)
+        outer_hist := TableHist{hdr_hist, t, info}
 
-	h.SetupBuckets(NUM_BUCKETS, info.Min, info.Max)
-
-	return h
+	return &outer_hist
 }
 
 func (h *Hist) TrackPercentiles() {

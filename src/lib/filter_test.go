@@ -62,8 +62,8 @@ func testIntLt(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(v.Hists["age"].Avg)) > 20 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if math.Abs(float64(v.Hists["age"].Mean())) > 20 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -88,8 +88,8 @@ func testIntGt(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(v.Hists["age"].Avg)) < 20 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if math.Abs(float64(v.Hists["age"].Mean())) < 20 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -121,9 +121,9 @@ func testIntNeq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		log.Println("TEST INT NEQ", k, v.Hists["age"].Avg)
-		if math.Abs(20-float64(v.Hists["age"].Avg)) < 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		log.Println("TEST INT NEQ", k, v.Hists["age"].Mean())
+		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -148,8 +148,8 @@ func testIntEq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -179,8 +179,8 @@ func testStrEq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -207,8 +207,8 @@ func testStrNeq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(20-float64(v.Hists["age"].Avg)) < 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 
@@ -239,8 +239,8 @@ func testStrRe(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if v.Hists["age"].Avg-20 < 0 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if v.Hists["age"].Mean()-20 < 0 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
@@ -271,8 +271,8 @@ func testSetIn(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if v.Hists["age"].Avg-20 < 0 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		if v.Hists["age"].Mean()-20 < 0 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 
