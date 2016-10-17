@@ -121,13 +121,13 @@ type ActiveSession struct {
 }
 
 type SessionStats struct {
-	NumEvents       Hist
-	NumSessions     Hist
-	SessionDuration Hist
-	Retention       Hist
+	NumEvents       BasicHist
+	NumSessions     BasicHist
+	SessionDuration BasicHist
+	Retention       BasicHist
 	Calendar        *Calendar
 
-	SessionDelta Hist
+	SessionDelta BasicHist
 
 	LastSessionEnd int64
 }
@@ -138,13 +138,13 @@ func NewSessionStats() *SessionStats {
 	return &ss
 }
 
-func (ss *SessionStats) CombineStats(stats *SessionStats) {
-	ss.NumEvents.Combine(&stats.NumEvents)
-	ss.NumSessions.Combine(&stats.NumSessions)
-	ss.SessionDuration.Combine(&stats.SessionDuration)
-	ss.SessionDelta.Combine(&stats.SessionDelta)
+func (ss *SessionStats) MergeStats(stats *SessionStats) {
+	ss.NumEvents.Merge(&stats.NumEvents)
+	ss.NumSessions.Merge(&stats.NumSessions)
+	ss.SessionDuration.Merge(&stats.SessionDuration)
+	ss.SessionDelta.Merge(&stats.SessionDelta)
 
-	ss.Calendar.CombineCalendar(stats.Calendar)
+	ss.Calendar.MergeCalendar(stats.Calendar)
 }
 
 func (ss *SessionStats) SummarizeSession(records RecordList) {
@@ -291,7 +291,7 @@ func (sl *SessionList) AddRecord(group_key string, r *Record) {
 	session.AddRecord(r)
 }
 
-func (as *ActiveSession) CombineSession(session *ActiveSession) {
+func (as *ActiveSession) MergeSession(session *ActiveSession) {
 	for _, r := range session.Records {
 		as.AddRecord(r)
 	}
@@ -355,7 +355,7 @@ func (ss *SessionSpec) Finalize() {
 			path_uniques[k] += 1
 		}
 
-		stats.CombineStats(as.Stats)
+		stats.MergeStats(as.Stats)
 		duration := as.Stats.Calendar.Max - as.Stats.Calendar.Min
 
 		retention := duration / int64(time.Hour.Seconds()*24)
@@ -399,13 +399,13 @@ func (ss *SessionSpec) PrintResults() {
 
 }
 
-func (ss *SessionSpec) CombineSessions(sessionspec *SessionSpec) {
+func (ss *SessionSpec) MergeSessions(sessionspec *SessionSpec) {
 	for key, as := range sessionspec.Sessions.List {
 		prev_session, ok := ss.Sessions.List[key]
 		if !ok {
 			ss.Sessions.List[key] = as
 		} else {
-			prev_session.CombineSession(as)
+			prev_session.MergeSession(as)
 		}
 	}
 }
@@ -569,7 +569,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			}
 
 			result_lock.Lock()
-			masterSession.CombineSessions(&blockSession)
+			masterSession.MergeSessions(&blockSession)
 			this_block.RecordList = nil
 			block.RecordList = nil
 			delete(block.table.BlockList, block.Name)

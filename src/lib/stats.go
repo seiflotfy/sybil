@@ -29,7 +29,8 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		}
 
 		// start by assuming the overall population mean and variance are already calculated
-		total_variance := cumulative.GetVariance()
+                std := cumulative.StdDev()
+		total_variance := std * std
 
 		// find out the min and max avg of each group by row so we can use a
 		// Histogram for calculating variance between groups
@@ -54,7 +55,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		// for calculating between groups, we create a new histogram and insert
 		// each group's average into the histogram (+ it's count as a weight) and
 		// then take the variance of that
-		between_groups := Hist{}
+		between_groups := BasicHist{}
 		between_groups.SetupBuckets(10000, int64(min_avg), int64(max_avg))
 		between_groups.TrackPercentiles()
 
@@ -66,7 +67,8 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 			}
 
 			// for calculating ss within groups
-			variance := hist.GetVariance()
+			std := hist.StdDev()
+			variance := std * std
 			sum_of_squares_within += float64(variance)
 
 			// for calculating ss between groups
@@ -76,7 +78,9 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		icc := 1.0
 		K := len(querySpec.Results)
 		if K > 1 {
-			mean_between_variance := between_groups.GetVariance() / float64(K-1)
+			std := between_groups.GetVariance()
+			variance := std * std
+			mean_between_variance := variance / float64(K-1)
 
 			ss_within_count := float64(cumulative.TotalCount() - int64(K))
 			mean_within_variance := sum_of_squares_within / ss_within_count

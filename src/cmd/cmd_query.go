@@ -27,6 +27,7 @@ func addQueryFlags() {
 	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
 	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	sybil.FLAGS.HIST_HDR = flag.Bool("hdr", false, "Use HDR Histograms for calculations")
 	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")

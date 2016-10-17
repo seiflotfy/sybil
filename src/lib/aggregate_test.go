@@ -178,7 +178,7 @@ func TestHistograms(test *testing.T) {
 
 		fmt.Println("PERCENTILES", percentiles)
 		fmt.Println("AGES", ages)
-		fmt.Println("BUCKETS", v.Hists["age"].Distribution())
+		fmt.Println("BUCKETS", v.Hists["age"].GetBuckets())
 	}
 
 	querySpec.OrderBy = "age"

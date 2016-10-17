@@ -26,6 +26,7 @@ type FlagDefs struct {
 	TIME_COL    *string
 	TIME_BUCKET *int
 	HIST_BUCKET *int
+	HIST_HDR    *bool
 
 	PRINT_KEYS         *bool
 	LOAD_AND_QUERY     *bool
@@ -83,10 +84,11 @@ type OptionDefs struct {
 	DELTA_ENCODE_INT_VALUES bool
 	DELTA_ENCODE_RECORD_IDS bool
 	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
-	GROUP_BY                []string
+
+	TIMESERIES  bool
+	TIME_COL_ID int16
+	TIME_FORMAT string
+	GROUP_BY    []string
 }
 
 // TODO: merge these two into one thing
@@ -116,6 +118,8 @@ func SetDefaults() {
 	FLAGS.ANOVA_ICC = &FALSE
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+
+	FLAGS.HIST_HDR = &FALSE
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SKIP_OUTLIERS = &TRUE

@@ -62,7 +62,7 @@ func (c *Calendar) AddActivity(timestamp int) {
 	c.Max = int64(math.Max(float64(timestamp), float64(c.Max)))
 }
 
-func (c *Calendar) CombineCalendar(cc *Calendar) {
+func (c *Calendar) MergeCalendar(cc *Calendar) {
 	copy_calendar(c.Daily, cc.Daily)
 	copy_calendar(c.Weekly, cc.Weekly)
 	copy_calendar(c.Monthly, cc.Monthly)

@@ -10,29 +10,123 @@ import "github.com/codahale/hdrhistogram"
 var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false
 
-type TableHist struct {
-  *hdrhistogram.Histogram
+// histogram types:
+// HDRHist (wrapper around github.com/codahale/hdrhistogram which implements Histogram interface)
+// BasicHist (which gets wrapped in HistCompat to implement the Histogram interface)
 
-  table *Table
-  info  *IntInfo
+type Histogram interface {
+	Mean() float64
+	Max() int64
+	Min() int64
+	TotalCount() int64
+
+	RecordValues(int64, int64) error
+	GetPercentiles() []int64
+	GetBuckets() map[string]int64
+	StdDev() float64
+	NewHist() Histogram
+
+	Merge(interface{})
 }
 
-func (th *TableHist) GetVariance() float64 {
-  std := th.StdDev()
-  return std * std;
+// {{{ HDR HIST
+type HDRHist struct {
+	*hdrhistogram.Histogram
+
+	table *Table
+	info  *IntInfo
+
+	track_percentiles bool
 }
 
-func (th *TableHist) GetPercentiles() []int64 {
-
-  ret := make([]int64, 100);
-  for i := 0; i < 100; i++ {
-    ret[i] = th.ValueAtQuantile(float64(i))
-  }
-
-  return ret
+func (th *HDRHist) NewHist() Histogram {
+	return th.table.NewHDRHist(th.info)
+}
+func (th *HDRHist) Merge(oh interface{}) {
+	hist := oh.(*HDRHist)
+	th.Histogram.Merge(hist.Histogram)
 }
 
-type Hist struct {
+func (th *HDRHist) GetVariance() float64 {
+	std := th.StdDev()
+	return std * std
+}
+
+func (th *HDRHist) GetPercentiles() []int64 {
+
+	ret := make([]int64, 100)
+	for i := 0; i < 100; i++ {
+		ret[i] = th.ValueAtQuantile(float64(i))
+	}
+
+	return ret
+}
+
+func (th *HDRHist) GetBuckets() map[string]int64 {
+	ret := make(map[string]int64)
+	for _, v := range th.Distribution() {
+		key := strconv.FormatInt(int64(v.From+v.To)/2, 10)
+		ret[key] = v.Count
+	}
+
+	return ret
+
+}
+
+// }}} HDR HIST
+
+// {{{ HIST COMPAT WRAPPER FOR BASIC HIST
+
+type HistCompat struct {
+	*BasicHist
+
+	Histogram *BasicHist
+}
+
+func (hc *HistCompat) Min() int64 {
+
+	return hc.Histogram.Min
+}
+
+func (hc *HistCompat) Max() int64 {
+	return hc.Histogram.Max
+}
+
+func (hc *HistCompat) NewHist() Histogram {
+	return hc.table.NewHist(hc.info)
+}
+
+func (h *HistCompat) Mean() float64 {
+	return h.Avg
+}
+
+func (h *HistCompat) GetMeanVariance() float64 {
+	return h.GetVariance() / float64(h.Count)
+}
+
+func (h *HistCompat) TotalCount() int64 {
+	return h.Count
+}
+
+func (h *HistCompat) StdDev() float64 {
+	return h.GetStdDev()
+}
+
+// compat layer with hdr hist
+func (h *HistCompat) RecordValues(value int64, n int64) error {
+	h.addWeightedValue(value, n)
+
+	return nil
+}
+
+func (h *HistCompat) Distribution() map[string]int64 {
+	return h.GetBuckets()
+}
+
+// }}}
+
+// {{{ BASIC HIST
+type BasicHist struct {
 	Max     int64
 	Min     int64
 	Samples int
@@ -52,7 +146,7 @@ type Hist struct {
 	info  *IntInfo
 }
 
-func (h *Hist) SetupBuckets(buckets int, min, max int64) {
+func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	// set up initial variables for max and min to be extrema in other
 	// direction
 	h.Avg = 0
@@ -90,30 +184,45 @@ func (h *Hist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func (t *Table) NewHist(info *IntInfo) *TableHist {
+func (t *Table) NewHist(info *IntInfo) *HistCompat {
 
-        log.Println("MAKING NEW HIST", info.Min, info.Max, info.Max * 2, 3);
-	hdr_hist := hdrhistogram.New(info.Min, info.Max * 2, 5)
-        outer_hist := TableHist{hdr_hist, t, info}
+	basic_hist := BasicHist{}
+	compat_hist := HistCompat{&basic_hist, &basic_hist}
+	compat_hist.table = t
+	compat_hist.info = info
+	compat_hist.Histogram = &basic_hist
 
-	return &outer_hist
+	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+		compat_hist.TrackPercentiles()
+	}
+
+	return &compat_hist
+
 }
 
-func (h *Hist) TrackPercentiles() {
+func (t *Table) NewHDRHist(info *IntInfo) *HDRHist {
+	hdr_hist := hdrhistogram.New(info.Min, info.Max*2, 5)
+	outer_hist := HDRHist{hdr_hist, t, info, true}
+
+	return &outer_hist
+
+}
+
+func (h *BasicHist) TrackPercentiles() {
 	h.track_percentiles = true
 
 	h.SetupBuckets(NUM_BUCKETS, h.info.Min, h.info.Max)
 }
 
-func (h *Hist) addValue(value int64) {
+func (h *BasicHist) addValue(value int64) {
 	h.addWeightedValue(value, 1)
 }
 
-func (h *Hist) Sum() int64 {
+func (h *BasicHist) Sum() int64 {
 	return int64(h.Avg * float64(h.Count))
 }
 
-func (h *Hist) addWeightedValue(value int64, weight int64) {
+func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
 	if value > h.info.Max*10 || value < h.info.Min {
@@ -165,7 +274,7 @@ func (h *Hist) addWeightedValue(value int64, weight int64) {
 	h.avgs[bucket_value] = partial + ((float64(value) - partial) / float64(h.values[bucket_value]) * float64(weight))
 }
 
-func (h *Hist) GetPercentiles() []int64 {
+func (h *BasicHist) GetPercentiles() []int64 {
 	if h.Count == 0 {
 		return make([]int64, 0)
 	}
@@ -197,18 +306,14 @@ func (h *Hist) GetPercentiles() []int64 {
 	return percentiles[:100]
 }
 
-func (h *Hist) GetMeanVariance() float64 {
-	return h.GetVariance() / float64(h.Count)
-}
-
-func (h *Hist) GetVariance() float64 {
+// VARIANCE is defined as the squared error from the mean
+func (h *BasicHist) GetVariance() float64 {
 	std := h.GetStdDev()
 	return std * std
 }
 
-// VARIANCE is defined as the squared error from the mean
 // STD DEV is defined as sqrt(VARIANCE)
-func (h *Hist) GetStdDev() float64 {
+func (h *BasicHist) GetStdDev() float64 {
 	// TOTAL VALUES
 
 	sum_variance := float64(0)
@@ -237,7 +342,7 @@ func (h *Hist) GetStdDev() float64 {
 	return math.Sqrt(sum_variance)
 }
 
-func (h *Hist) GetBuckets() map[string]int64 {
+func (h *BasicHist) GetBuckets() map[string]int64 {
 	ret := make(map[string]int64, 0)
 
 	for k, v := range h.values {
@@ -255,7 +360,9 @@ func (h *Hist) GetBuckets() map[string]int64 {
 	return ret
 }
 
-func (h *Hist) Combine(next_hist *Hist) {
+func (h *BasicHist) Merge(oh interface{}) {
+	next_hist := oh.(*HistCompat)
+
 	for k, v := range next_hist.values {
 		h.values[k] += v
 	}
@@ -263,19 +370,19 @@ func (h *Hist) Combine(next_hist *Hist) {
 	total := h.Count + next_hist.Count
 	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (next_hist.Avg * (float64(next_hist.Count) / float64(total)))
 
-	if h.Min > next_hist.Min {
-		h.Min = next_hist.Min
+	if h.Min > next_hist.Min() {
+		h.Min = next_hist.Min()
 	}
 
-	if h.Max < next_hist.Max {
-		h.Max = next_hist.Max
+	if h.Max < next_hist.Max() {
+		h.Max = next_hist.Max()
 	}
 
 	h.Samples = h.Samples + next_hist.Samples
 	h.Count = total
 }
 
-func (h *Hist) Print() {
+func (h *BasicHist) Print() {
 	vals := make(map[int64]int64)
 
 	for val_index, count := range h.values {
@@ -287,3 +394,5 @@ func (h *Hist) Print() {
 
 	log.Println("HIST COUNTS ARE", vals)
 }
+
+// }}} BASIC HIST
