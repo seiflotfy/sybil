@@ -213,6 +213,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
 	}
 
+	if HOLD_MATCHES {
+		querySpec.luaInit()
+		querySpec.luaMap(&querySpec.Matched)
+	}
+
 	return matched_records
 
 }
@@ -289,6 +294,9 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	astart := time.Now()
 	resultSpec := QuerySpec{}
 	resultSpec.Table = querySpec.Table
+	resultSpec.LuaResult = make(LuaTable, 0)
+	resultSpec.luaInit()
+
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
 
@@ -302,6 +310,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
+		resultSpec.luaCombine(spec)
 
 		for _, result := range spec.Results {
 			cumulative_result.Combine(result)
@@ -329,6 +338,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	resultSpec.TimeBucket = querySpec.TimeBucket
 	resultSpec.TimeResults = master_time_result
 	resultSpec.Results = master_result
+	resultSpec.luaFinalize()
 
 	aend := time.Now()
 	Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))

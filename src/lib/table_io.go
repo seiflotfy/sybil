@@ -20,7 +20,7 @@ var TEMP_INGEST_DIR = ".ingest.temp"
 var CACHE_DIR = "cache"
 
 var DELETE_BLOCKS_AFTER_QUERY = true
-var HOLD_MATCHES = false
+var HOLD_MATCHES = true
 var BLOCKS_PER_CACHE_FILE = 64
 
 func (t *Table) saveTableInfo(fname string) {
