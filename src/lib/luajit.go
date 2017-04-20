@@ -7,100 +7,117 @@ package sybil
 #include <luajit-2.0/lua.h>
 #include <luajit-2.0/lualib.h>
 #include <luajit-2.0/lauxlib.h>
-int init() {
-return 0;
-}
 
-void set_intfield (lua_State *state, const char *index, int value) {
-lua_pushstring(state, index);
-lua_pushnumber(state, value);
-lua_settable(state, -3);
-}
-
-void set_strfield (lua_State *state, const char *index, char *value) {
-lua_pushstring(state, index);
-lua_pushstring(state, value);
-lua_settable(state, -3);
-}
-
+// declare anything in luajit.c that we want to talk to
+extern void set_numfield (lua_State *state, const char *index, double value);
+extern void set_strfield (lua_State *state, const char *index, char *value);
 */
 import "C"
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"sync"
 	"unsafe"
 )
 
-const src = `
+const PREAMBLE = `
 local ffi = require('ffi')
 ffi.cdef([[
     int init();
+	int go_get_int(int, int, int);
+
+	int go_get_str_id(int, int, int);
+	char* go_get_str_val(int, int, int);
 ]])
 
-function map(records)
-  print("LUA CALLING MAP ON", #records, "RECORDS")
-  for i=1,#records do
-	local record = records[i]
+function get_int(id, col)
+  return ffi.C.go_get_int(block_id, id, col)
+end
+
+-- This uses get_str_id and get_str_val
+local col_str_cache = {}
+function get_str(id, col)
+  str_id = get_str_id(id, col)
+  if col_str_cache[col] == nil then
+	col_str_cache[col] = {}
   end
 
-  return { count=#records }
+  if col_str_cache[col][str_id] == nil then
+	local ret = ffi.string(get_str_val(str_id, col))
+	col_str_cache[col][str_id]  = ret
+  end
+
+  return col_str_cache[col][str_id]
 end
 
-function reduce(results, new)
-  results.count = (results.count or 0) + (new.count or 10)
-  return results
-
+function get_str_id(id, col)
+  return ffi.C.go_get_str_id(block_id, id, col)
 end
 
-function finalize(results) 
-  print("LUA FINALIZING RESULTS")
-  results["finalized"] = 1
-  return results
+function get_str_val(str_id, col)
+  return ffi.C.go_get_str_val(block_id, str_id, col)
 end
 
-ffi.C.init()
+
+
+
+
+-- END PREAMBLE
+`
+
+var SRC = `
   `
 
-func (r *Record) toLuaTable(state *C.struct_lua_State) {
-	if r == nil {
-		return
+var LUA_BLOCK_ID = 0
+var LUA_BLOCKS = make([]*QuerySpec, 0)
+var LUA_LOCK = sync.Mutex{}
+
+//export go_get_int
+func go_get_int(block_id, record_id, col_id int) int {
+	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == INT_VAL {
+		return int(LUA_BLOCKS[block_id-1].Matched[record_id-1].Ints[col_id])
 	}
 
-	C.lua_createtable(state, 0, 0)
-
-	for name, val := range r.Ints {
-		if r.Populated[name] == INT_VAL {
-			col := r.block.GetColumnInfo(int16(name))
-			fieldname := col.get_string_for_key(name)
-
-			C.set_intfield(state, C.CString(fieldname), C.int(val))
-
-		}
-	}
-
-	for name, val := range r.Strs {
-		if r.Populated[name] == STR_VAL {
-			col := r.block.GetColumnInfo(int16(name))
-			strval := col.get_string_for_val(int32(val))
-			fieldname := col.get_string_for_key(name)
-
-			C.set_strfield(state, C.CString(fieldname), C.CString(strval))
-		}
-	}
+	return -1
 }
 
-func (rl *RecordList) toLuaTable(state *C.struct_lua_State) {
-	C.lua_createtable(state, 0, 0)
-	for i, r := range *rl {
-		r.toLuaTable(state)
-		C.lua_rawseti(state, -2, C.int(i+1))
+//export go_get_str_id
+func go_get_str_id(block_id, record_id int, col_id int) int {
+	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == STR_VAL {
+		return int(LUA_BLOCKS[block_id-1].Matched[record_id-1].Strs[col_id])
+
 	}
 
+	return -1
+}
+
+//export go_get_str_val
+// TODO: this should be cached so we don't keep adding new memory
+func go_get_str_val(block_id, str_id int, col_id int) *C.char {
+	col := LUA_BLOCKS[block_id-1].Matched[0].block.GetColumnInfo(int16(col_id))
+	val := col.get_string_for_val(int32(str_id))
+	return C.CString(val)
+
+}
+
+func SetLuaScript(filename string) {
+	dat, err := ioutil.ReadFile(filename)
+	if err != nil {
+		Error("Couldn't open Lua script", filename, err)
+	}
+
+	FLAGS.LUA = &TRUE
+	HOLD_MATCHES = true
+	SRC = string(dat)
 }
 
 type LuaKey interface{}
 type LuaTable map[string]interface{}
 
+// creates a luatable inside state that contains the contents of T
+// TODO: add ability to marshall arrays
 func setLuaTable(state *C.struct_lua_State, t LuaTable) {
 	C.lua_createtable(state, 0, 0)
 
@@ -109,7 +126,9 @@ func setLuaTable(state *C.struct_lua_State, t LuaTable) {
 		switch v := v.(type) {
 		case bool:
 		case int:
-			C.set_intfield(state, C.CString(k), C.int(v))
+			C.set_numfield(state, C.CString(k), C.double(v))
+		case float64:
+			C.set_numfield(state, C.CString(k), C.double(v))
 		case string:
 			C.set_strfield(state, C.CString(k), C.CString(v))
 		case LuaTable:
@@ -137,7 +156,7 @@ func getLuaTable(state *C.struct_lua_State) LuaTable {
 
 		switch C.lua_type(state, -1) {
 		case C.LUA_TNUMBER:
-			val = int(C.lua_tonumber(state, -1))
+			val = float64(C.lua_tonumber(state, -1))
 		case C.LUA_TBOOLEAN:
 			val = C.lua_toboolean(state, -1)
 		case C.LUA_TSTRING:
@@ -175,11 +194,12 @@ func (qs *QuerySpec) luaInit() {
 	C.luaL_openlibs(state)
 
 	// Compile the script.
-	csrc := C.CString(src)
+	csrc := C.CString(fmt.Sprintf("%s\n%s", PREAMBLE, SRC))
 	defer C.free(unsafe.Pointer(csrc))
 	if C.luaL_loadstring(state, csrc) != 0 {
 		errstring := C.GoString(C.lua_tolstring(state, -1, nil))
 		fmt.Printf("Lua error: %v\n", errstring)
+		os.Exit(1)
 	}
 
 	// Execute outer level
@@ -188,13 +208,28 @@ func (qs *QuerySpec) luaInit() {
 		fmt.Printf("Lua execution error: %v\n", errstring)
 	}
 
+	LUA_LOCK.Lock()
+	LUA_BLOCKS = append(LUA_BLOCKS, qs)
+	LUA_BLOCK_ID += 1
+	C.lua_pushnumber(state, C.lua_Number(LUA_BLOCK_ID))
+	LUA_LOCK.Unlock()
+
+	C.lua_setfield(state, C.LUA_GLOBALSINDEX, C.CString("block_id"))
+
+	col_mapping := make(LuaTable, 0)
+	for id, name := range qs.Table.key_string_id_lookup {
+		col_mapping[name] = int(id)
+	}
+	setLuaTable(state, col_mapping)
+	C.lua_setfield(state, C.LUA_GLOBALSINDEX, C.CString("COLS"))
+
 }
 
 func (qs *QuerySpec) luaMap(rl *RecordList) LuaTable {
 	state := qs.LuaState
 	// Execute map function
 	C.lua_getfield(state, C.LUA_GLOBALSINDEX, C.CString("map"))
-	rl.toLuaTable(state)
+	C.lua_pushnumber(state, C.lua_Number(len(*rl)))
 	if C.lua_pcall(state, 1, 1, 0) != 0 {
 		errstring := C.GoString(C.lua_tolstring(state, -1, nil))
 		fmt.Printf("Lua Reduce execution error: %v\n", errstring)
