@@ -6,6 +6,7 @@ var FALSE = false
 var TRUE = true
 
 var TEST_MODE = false
+var ENABLE_LUA = false
 
 type FlagDefs struct {
 	OP          *string
@@ -140,4 +141,5 @@ func SetDefaults() {
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
+	initLua()
 }

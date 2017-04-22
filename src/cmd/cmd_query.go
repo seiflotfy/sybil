@@ -45,7 +45,10 @@ func addQueryFlags() {
 
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
-	sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
+
+	if sybil.ENABLE_LUA {
+		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
+	}
 
 	LIST_TABLES = flag.Bool("tables", false, "List tables")
 

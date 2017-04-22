@@ -1,3 +1,5 @@
+//+build luajit
+
 package sybil
 
 /*
@@ -67,8 +69,11 @@ end
 -- END PREAMBLE
 `
 
-var SRC = `
-  `
+var SRC = ` `
+
+func initLua() {
+	ENABLE_LUA = true
+}
 
 var LUA_BLOCK_ID = 0
 var LUA_BLOCKS = make([]*QuerySpec, 0)

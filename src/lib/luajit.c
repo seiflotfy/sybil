@@ -1,3 +1,5 @@
+//+build luajit
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <luajit-2.0/lua.h>
