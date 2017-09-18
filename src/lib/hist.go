@@ -5,7 +5,7 @@ import "sort"
 import "strconv"
 
 var NUM_BUCKETS = 1000
-var DEBUG_OUTLIERS = false
+var DEBUG_OUTLIERS = true
 
 type Hist struct {
 	Max     int64
@@ -214,6 +214,26 @@ func (h *Hist) GetStdDev() float64 {
 	}
 
 	return math.Sqrt(sum_variance)
+}
+
+func (h *Hist) GetSparseBuckets() map[int64]int64 {
+	ret := make(map[int64]int64, 0)
+
+	for k, v := range h.values {
+		if v > 0 {
+			ret[int64(k)*int64(h.bucket_size)+h.Min] = v
+		}
+	}
+
+	for _, v := range h.outliers {
+		ret[int64(v)] += 1
+	}
+
+	for _, v := range h.underliers {
+		ret[int64(v)] += 1
+	}
+
+	return ret
 }
 
 func (h *Hist) GetBuckets() map[string]int64 {

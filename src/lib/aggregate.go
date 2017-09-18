@@ -189,7 +189,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := added_record.Hists[a.name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
+					hist = r.block.table.NewMultiHist(r.block.table.get_int_info(a.name_id))
 					if a.op_id == OP_HIST {
 						hist.TrackPercentiles()
 					}
