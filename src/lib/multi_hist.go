@@ -1,6 +1,7 @@
 package sybil
 
 import "sort"
+import "math"
 
 type MultiHist struct {
 	Max     int64
@@ -149,9 +150,19 @@ func (h *MultiHist) GetVariance() float64 {
 // VARIANCE is defined as the squared error from the mean
 // STD DEV is defined as sqrt(VARIANCE)
 func (h *MultiHist) GetStdDev() float64 {
-	// TOTAL VALUES
+	all_buckets := h.GetSparseBuckets()
 
-	return 0
+	sum_variance := float64(0)
+	for val, count := range all_buckets {
+		delta := float64(val) - h.Avg
+
+		ratio := float64(count) / float64(h.Count)
+
+		// unbiased variance. probably unstable
+		sum_variance += (float64(delta*delta) * ratio)
+	}
+
+	return math.Sqrt(sum_variance)
 }
 
 func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
