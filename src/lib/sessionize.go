@@ -121,14 +121,14 @@ type ActiveSession struct {
 }
 
 type SessionStats struct {
-	NumEvents       Hist
-	NumBounces      Hist
-	NumSessions     Hist
-	SessionDuration Hist
-	Retention       Hist
+	NumEvents       BasicHist
+	NumBounces      BasicHist
+	NumSessions     BasicHist
+	SessionDuration BasicHist
+	Retention       BasicHist
 	Calendar        *Calendar
 
-	SessionDelta Hist
+	SessionDelta BasicHist
 
 	LastSessionEnd int64
 }
@@ -140,11 +140,11 @@ func NewSessionStats() *SessionStats {
 }
 
 func (ss *SessionStats) CombineStats(stats *SessionStats) {
-	ss.NumEvents.Combine(&stats.NumEvents)
-	ss.NumBounces.Combine(&stats.NumBounces)
-	ss.NumSessions.Combine(&stats.NumSessions)
-	ss.SessionDuration.Combine(&stats.SessionDuration)
-	ss.SessionDelta.Combine(&stats.SessionDelta)
+	ss.NumEvents.Merge(&stats.NumEvents)
+	ss.NumBounces.Merge(&stats.NumBounces)
+	ss.NumSessions.Merge(&stats.NumSessions)
+	ss.SessionDuration.Merge(&stats.SessionDuration)
+	ss.SessionDelta.Merge(&stats.SessionDelta)
 
 	ss.Calendar.CombineCalendar(stats.Calendar)
 }

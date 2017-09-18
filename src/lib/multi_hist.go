@@ -12,7 +12,7 @@ type MultiHist struct {
 	track_percentiles bool
 	num_hists         int
 
-	subhists []*Hist
+	subhists []*HistCompat
 	table    *Table
 	info     *IntInfo
 }
@@ -29,15 +29,19 @@ func (h *MultiHist) SetupBuckets(buckets int, min, max int64) {
 
 }
 
-func (t *Table) NewMultiHist(info *IntInfo) *MultiHist {
+func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
 	h.table = t
 	h.info = info
 
 	h.SetupBuckets(NUM_BUCKETS, info.Min, info.Max)
+	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+		h.TrackPercentiles()
+	}
 
-	return h
+	compat := MultiHistCompat{h, h}
+	return &compat
 }
 
 func (h *MultiHist) addValue(value int64) {
@@ -192,20 +196,21 @@ func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
 
 }
 
-func (h *MultiHist) Combine(next_hist *MultiHist) {
+func (h *MultiHist) Merge(oh interface{}) {
+	next_hist := oh.(*MultiHistCompat)
 	for i, subhist := range h.subhists {
-		subhist.Combine(next_hist.subhists[i])
+		subhist.Merge(next_hist.subhists[i])
 	}
 
 	total := h.Count + next_hist.Count
 	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (next_hist.Avg * (float64(next_hist.Count) / float64(total)))
 
-	if h.Min > next_hist.Min {
-		h.Min = next_hist.Min
+	if h.Min > next_hist.Min() {
+		h.Min = next_hist.Min()
 	}
 
-	if h.Max < next_hist.Max {
-		h.Max = next_hist.Max
+	if h.Max < next_hist.Max() {
+		h.Max = next_hist.Max()
 	}
 
 	h.Samples = h.Samples + next_hist.Samples
@@ -222,7 +227,7 @@ func (h *MultiHist) TrackPercentiles() {
 	}
 	h.num_hists = num_hists
 
-	h.subhists = make([]*Hist, num_hists+1)
+	h.subhists = make([]*HistCompat, num_hists+1)
 
 	right_edge := h.Max
 
@@ -251,3 +256,53 @@ func (h *MultiHist) Print() {
 
 	Debug("HIST COUNTS ARE", 0)
 }
+
+// {{{ HIST COMPAT WRAPPER FOR MULTI HIST
+
+type MultiHistCompat struct {
+	*MultiHist
+
+	Histogram *MultiHist
+}
+
+func (hc *MultiHistCompat) Min() int64 {
+
+	return hc.Histogram.Min
+}
+
+func (hc *MultiHistCompat) Max() int64 {
+	return hc.Histogram.Max
+}
+
+func (hc *MultiHistCompat) NewHist() Histogram {
+	return hc.table.NewMultiHist(hc.info)
+}
+
+func (h *MultiHistCompat) Mean() float64 {
+	return h.Avg
+}
+
+func (h *MultiHistCompat) GetMeanVariance() float64 {
+	return h.GetVariance() / float64(h.Count)
+}
+
+func (h *MultiHistCompat) TotalCount() int64 {
+	return h.Count
+}
+
+func (h *MultiHistCompat) StdDev() float64 {
+	return h.GetStdDev()
+}
+
+// compat layer with hdr hist
+func (h *MultiHistCompat) RecordValues(value int64, n int64) error {
+	h.addWeightedValue(value, n)
+
+	return nil
+}
+
+func (h *MultiHistCompat) Distribution() map[string]int64 {
+	return h.GetBuckets()
+}
+
+// }}}
