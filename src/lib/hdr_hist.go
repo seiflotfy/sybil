@@ -1,8 +1,15 @@
 //+build hdrhist
+
 package sybil
 
 import "strconv"
 import "github.com/codahale/hdrhistogram"
+
+var ENABLE_HDR = true
+
+func newHDRHist(table *Table, info *IntInfo) Histogram {
+	return table.NewHDRHist(info)
+}
 
 // {{{ HDR HIST
 type HDRHist struct {
