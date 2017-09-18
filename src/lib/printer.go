@@ -106,7 +106,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			h := r.Hists[agg.name]
 			if h != nil {
 				inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
-				inner["buckets"] = r.Hists[agg.name].GetBuckets()
+				inner["buckets"] = r.Hists[agg.name].GetNonZeroBuckets()
 				inner["stddev"] = r.Hists[agg.name].GetStdDev()
 				inner["samples"] = r.Hists[agg.name].Samples
 			}

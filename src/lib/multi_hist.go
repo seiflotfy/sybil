@@ -150,6 +150,19 @@ func (h *MultiHist) GetStdDev() float64 {
 	return 0
 }
 
+func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
+	non_zero_buckets := make(map[string]int64)
+	buckets := h.GetBuckets()
+	for k, v := range buckets {
+		if v > 0 {
+			non_zero_buckets[k] = v
+		}
+	}
+
+	return non_zero_buckets
+
+}
+
 func (h *MultiHist) GetBuckets() map[string]int64 {
 	all_buckets := make(map[string]int64, 0)
 	for _, subhist := range h.subhists {
