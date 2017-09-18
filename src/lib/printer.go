@@ -96,6 +96,17 @@ func printTimeResults(querySpec *QuerySpec) {
 
 }
 
+func getSparseBuckets(buckets map[string]int64) map[string]int64 {
+	non_zero_buckets := make(map[string]int64)
+	for k, v := range buckets {
+		if v > 0 {
+			non_zero_buckets[k] = v
+		}
+	}
+
+	return non_zero_buckets
+}
+
 func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
@@ -106,7 +117,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			h := r.Hists[agg.name]
 			if h != nil {
 				inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
-				inner["buckets"] = r.Hists[agg.name].GetBuckets()
+				inner["buckets"] = getSparseBuckets(r.Hists[agg.name].GetBuckets())
 				inner["stddev"] = r.Hists[agg.name].StdDev()
 				inner["samples"] = r.Hists[agg.name].TotalCount()
 			}

@@ -261,6 +261,8 @@ func (h *MultiHist) TrackPercentiles() {
 	h.subhists[num_hists] = h.table.NewHist(&info)
 	h.subhists[num_hists].TrackPercentiles()
 
+	Debug("CREATED MULTI HIST FOR", h.Min, h.Max, "HAS", num_hists, "SUB HISTS")
+
 }
 
 func (h *MultiHist) Print() {
