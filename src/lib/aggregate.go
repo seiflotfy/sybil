@@ -191,7 +191,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				if !ok {
 					if *FLAGS.HDR_HIST && ENABLE_HDR {
 						hist = newHDRHist(r.block.table, r.block.table.get_int_info(a.name_id))
-					} else if *FLAGS.HIST_BUCKET == 0 || *FLAGS.LOG_HIST {
+					} else if *FLAGS.LOG_HIST {
 						hist = r.block.table.NewMultiHist(r.block.table.get_int_info(a.name_id))
 					} else {
 						hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))

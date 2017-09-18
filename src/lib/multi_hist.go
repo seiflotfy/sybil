@@ -20,23 +20,16 @@ type MultiHist struct {
 
 var HIST_FACTOR_POW = uint(1)
 
-func (h *MultiHist) SetupBuckets(buckets int, min, max int64) {
-	// set up initial variables for max and min to be extrema in other
-	// direction
-	h.Avg = 0
-	h.Count = 0
-	h.Min = min
-	h.Max = max
-
-}
-
 func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
 	h.table = t
 	h.info = info
 
-	h.SetupBuckets(NUM_BUCKETS, info.Min, info.Max)
+	h.Avg = 0
+	h.Count = 0
+	h.Min = info.Min
+	h.Max = info.Max
 	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
 		h.TrackPercentiles()
 	}
@@ -233,7 +226,7 @@ func (h *MultiHist) TrackPercentiles() {
 	bucket_size := (h.Max - h.Min)
 
 	num_hists := 0
-	for t := bucket_size; t > 100; t >>= HIST_FACTOR_POW {
+	for t := bucket_size; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
 		num_hists += 1
 	}
 	h.num_hists = num_hists
