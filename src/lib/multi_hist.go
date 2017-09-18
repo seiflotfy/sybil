@@ -18,7 +18,6 @@ type MultiHist struct {
 }
 
 var HIST_FACTOR_POW = uint(1)
-var HIST_FACTOR = 1 << HIST_FACTOR_POW
 
 func (h *MultiHist) SetupBuckets(buckets int, min, max int64) {
 	// set up initial variables for max and min to be extrema in other
@@ -82,19 +81,11 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		return
 	}
 
-	// TODO: exponentiate to find the right hist to place this in
-	bucket_size := (h.Max - h.Min)
-	right_edge := h.Max
-	left_edge := int64(0)
-
-	for i := 0; i < h.num_hists; i++ {
-		bucket_size >>= HIST_FACTOR_POW
-		left_edge = right_edge - bucket_size
-		if value >= left_edge {
-			h.subhists[i].addWeightedValue(value, weight)
+	for _, sh := range h.subhists {
+		if value >= sh.info.Min && value <= sh.info.Max {
+			sh.addWeightedValue(value, weight)
 			break
 		}
-		right_edge = left_edge
 	}
 
 }
@@ -133,7 +124,7 @@ func (h *MultiHist) GetPercentiles() []int64 {
 
 		if p <= 100 {
 			percentiles[p] = int64(k)
-		} else {
+		} else if DEBUG_OUTLIERS {
 			Print("SETTING P", p, k)
 		}
 		prev_p = p
@@ -213,12 +204,12 @@ func (h *MultiHist) TrackPercentiles() {
 	bucket_size := (h.Max - h.Min)
 
 	num_hists := 0
-	for t := bucket_size; t > 0; t >>= HIST_FACTOR_POW {
+	for t := bucket_size; t > 100; t >>= HIST_FACTOR_POW {
 		num_hists += 1
 	}
 	h.num_hists = num_hists
 
-	h.subhists = make([]*Hist, num_hists)
+	h.subhists = make([]*Hist, num_hists+1)
 
 	right_edge := h.Max
 
@@ -232,6 +223,14 @@ func (h *MultiHist) TrackPercentiles() {
 		h.subhists[i] = h.table.NewHist(&info)
 		h.subhists[i].TrackPercentiles()
 	}
+
+	// Add the smallest hist to the end from h.Min -> the last bucket
+	info := IntInfo{}
+	info.Min = h.Min
+	info.Max = right_edge
+
+	h.subhists[num_hists] = h.table.NewHist(&info)
+	h.subhists[num_hists].TrackPercentiles()
 
 }
 
