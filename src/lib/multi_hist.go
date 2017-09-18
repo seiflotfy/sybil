@@ -225,6 +225,8 @@ func (h *MultiHist) TrackPercentiles() {
 	h.track_percentiles = true
 	bucket_size := (h.Max - h.Min)
 
+	// We create 1:1 buckets for the smallest bucket, then increase
+	// logarithmically
 	num_hists := 0
 	for t := bucket_size; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
 		num_hists += 1
