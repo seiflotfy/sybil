@@ -26,7 +26,7 @@ type Histogram interface {
 	StdDev() float64
 	NewHist() Histogram
 
-	Merge(interface{})
+	Combine(interface{})
 }
 
 // {{{ HDR HIST
@@ -42,7 +42,7 @@ type HDRHist struct {
 func (th *HDRHist) NewHist() Histogram {
 	return th.table.NewHDRHist(th.info)
 }
-func (th *HDRHist) Merge(oh interface{}) {
+func (th *HDRHist) Combine(oh interface{}) {
 	hist := oh.(*HDRHist)
 	th.Histogram.Merge(hist.Histogram)
 }
@@ -380,7 +380,7 @@ func (h *BasicHist) GetBuckets() map[string]int64 {
 	return ret
 }
 
-func (h *BasicHist) Merge(oh interface{}) {
+func (h *BasicHist) Combine(oh interface{}) {
 	next_hist := oh.(*HistCompat)
 
 	for k, v := range next_hist.values {

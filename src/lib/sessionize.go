@@ -140,11 +140,11 @@ func NewSessionStats() *SessionStats {
 }
 
 func (ss *SessionStats) CombineStats(stats *SessionStats) {
-	ss.NumEvents.Merge(&stats.NumEvents)
-	ss.NumBounces.Merge(&stats.NumBounces)
-	ss.NumSessions.Merge(&stats.NumSessions)
-	ss.SessionDuration.Merge(&stats.SessionDuration)
-	ss.SessionDelta.Merge(&stats.SessionDelta)
+	ss.NumEvents.Combine(&stats.NumEvents)
+	ss.NumBounces.Combine(&stats.NumBounces)
+	ss.NumSessions.Combine(&stats.NumSessions)
+	ss.SessionDuration.Combine(&stats.SessionDuration)
+	ss.SessionDelta.Combine(&stats.SessionDelta)
 
 	ss.Calendar.CombineCalendar(stats.Calendar)
 }

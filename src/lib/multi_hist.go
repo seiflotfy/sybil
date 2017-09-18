@@ -207,10 +207,10 @@ func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
 
 }
 
-func (h *MultiHist) Merge(oh interface{}) {
+func (h *MultiHist) Combine(oh interface{}) {
 	next_hist := oh.(*MultiHistCompat)
 	for i, subhist := range h.subhists {
-		subhist.Merge(next_hist.subhists[i])
+		subhist.Combine(next_hist.subhists[i])
 	}
 
 	total := h.Count + next_hist.Count

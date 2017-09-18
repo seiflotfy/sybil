@@ -89,10 +89,10 @@ func (rs *Result) Combine(next_result *Result) {
 		if !ok {
 			nh := h.NewHist()
 
-			nh.Merge(h)
+			nh.Combine(h)
 			rs.Hists[k] = nh
 		} else {
-			rs.Hists[k].Merge(h)
+			rs.Hists[k].Combine(h)
 		}
 	}
 
