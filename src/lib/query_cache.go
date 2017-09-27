@@ -43,15 +43,16 @@ type SavedAggregation struct {
 // for a per block query cache, we will have to clamp the time filters to the
 // query block's extents.
 
-func (tb *TableBlock) GetRelevantFilters(querySpec *QuerySpec) []Filter {
+func (querySpec *QuerySpec) GetRelevantFilters(blockname string) []Filter {
 
 	filters := make([]Filter, 0)
 	if querySpec == nil {
 		return filters
 	}
 
-	t := tb.table
-	info := t.LoadBlockInfo(tb.Name)
+	t := querySpec.Table
+
+	info := t.LoadBlockInfo(blockname)
 
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
@@ -96,11 +97,11 @@ func (tb *TableBlock) GetRelevantFilters(querySpec *QuerySpec) []Filter {
 
 }
 
-func (qs *QuerySpec) GetCacheStruct(tb *TableBlock) QueryCacheKey {
+func (qs *QuerySpec) GetCacheStruct(blockname string) QueryCacheKey {
 	cache_spec := QueryCacheKey{}
 
 	// CLAMP OUT FILTERS
-	cache_spec.Filters = tb.GetRelevantFilters(qs)
+	cache_spec.Filters = qs.GetRelevantFilters(blockname)
 	cache_spec.Groups = make([]SavedGrouping, 0)
 	for _, g := range qs.Groups {
 		sg := SavedGrouping{g.name}
@@ -118,8 +119,8 @@ func (qs *QuerySpec) GetCacheStruct(tb *TableBlock) QueryCacheKey {
 
 	return cache_spec
 }
-func (qs *QuerySpec) GetCacheKey(tb *TableBlock) string {
-	cache_spec := qs.GetCacheStruct(tb)
+func (qs *QuerySpec) GetCacheKey(blockname string) string {
+	cache_spec := qs.GetCacheStruct(blockname)
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
@@ -135,16 +136,22 @@ func (qs *QuerySpec) GetCacheKey(tb *TableBlock) string {
 	return ret
 }
 
-func (qs *QuerySpec) LoadCachedResults(tb *TableBlock) bool {
-	cache_key := qs.GetCacheKey(tb)
+func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
+	cache_key := qs.GetCacheKey(blockname)
 
-	cache_dir := path.Join(tb.Name, "cache")
+	cache_dir := path.Join(blockname, "cache")
 	cache_name := fmt.Sprintf("%s.db", cache_key)
 	filename := path.Join(cache_dir, cache_name)
-	dec := GetFileDecoder(filename)
+
+	file, err := os.Open(filename)
+	defer file.Close()
+	if err != nil {
+		return false
+	}
 
 	cachedSpec := SavedQueryResults{}
-	err := dec.Decode(&cachedSpec)
+	dec := gob.NewDecoder(file)
+	err = dec.Decode(&cachedSpec)
 	if err != nil {
 		Debug("ERROR DECODING CACHED FILE", err)
 		return false
@@ -159,50 +166,53 @@ func (qs *QuerySpec) LoadCachedResults(tb *TableBlock) bool {
 	return true
 }
 
-func (qs *QuerySpec) SaveCachedResults(tb *TableBlock) {
+func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	if *FLAGS.CACHED_QUERIES == false {
 		return
 	}
 
-	go func() {
-		cache_key := qs.GetCacheKey(tb)
+	info := qs.Table.LoadBlockInfo(blockname)
 
-		cachedInfo := SavedQueryResults{}
-		cachedInfo.Results = qs.Results
-		cachedInfo.TimeResults = qs.TimeResults
-
-		cache_dir := path.Join(tb.Name, "cache")
-		os.MkdirAll(cache_dir, 0777)
-
-		cache_name := fmt.Sprintf("%s.db", cache_key)
-		filename := path.Join(cache_dir, cache_name)
-		tempfile, err := ioutil.TempFile(cache_dir, cache_name)
-		if err != nil {
-			Debug("TEMPFILE ERROR", err)
-		}
-
-		var buf bytes.Buffer
-		enc := gob.NewEncoder(&buf)
-		err = enc.Encode(cachedInfo)
-
-		if err != nil {
-			Warn("cached query encoding error:", err)
-			return
-		}
-
-		if err != nil {
-			Error("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
-		}
-
-		_, err = buf.WriteTo(tempfile)
-		if err != nil {
-			Error("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
-		}
-
-		RenameAndMod(tempfile.Name(), filename)
-
-		Debug("SERIALIZED QUERY CACHE", tb.Name, "INTO ", buf.Len(), "BYTES", cache_key)
+	if info.NumRecords < int32(CHUNK_SIZE) {
 		return
-	}()
+	}
+
+	cache_key := qs.GetCacheKey(blockname)
+
+	cachedInfo := SavedQueryResults{}
+	cachedInfo.Results = qs.Results
+	cachedInfo.TimeResults = qs.TimeResults
+
+	cache_dir := path.Join(blockname, "cache")
+	os.MkdirAll(cache_dir, 0777)
+
+	cache_name := fmt.Sprintf("%s.db", cache_key)
+	filename := path.Join(cache_dir, cache_name)
+	tempfile, err := ioutil.TempFile(cache_dir, cache_name)
+	if err != nil {
+		Debug("TEMPFILE ERROR", err)
+	}
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(cachedInfo)
+
+	if err != nil {
+		Warn("cached query encoding error:", err)
+		return
+	}
+
+	if err != nil {
+		Error("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
+	}
+
+	_, err = buf.WriteTo(tempfile)
+	if err != nil {
+		Error("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
+	}
+
+	RenameAndMod(tempfile.Name(), filename)
+
+	return
 
 }

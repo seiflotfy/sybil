@@ -349,7 +349,7 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 	tb.Info = info
 
 	blockQuery := CopyQuerySpec(querySpec)
-	if blockQuery.LoadCachedResults(&tb) {
+	if blockQuery.LoadCachedResults(tb.Name) {
 		t.block_m.Lock()
 		t.BlockList[dirname] = &tb
 		t.block_m.Unlock()
@@ -395,6 +395,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	var wg sync.WaitGroup
 	block_specs := make(map[string]*QuerySpec)
+	to_cache_specs := make(map[string]*QuerySpec)
 
 	loaded_info := t.LoadTableInfo()
 	if loaded_info == false {
@@ -495,17 +496,20 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						if blockQuery == nil {
 							blockQuery = CopyQuerySpec(querySpec)
 							blockQuery.MatchedCount = FilterAndAggRecords(blockQuery, &block.RecordList)
-							blockQuery.SaveCachedResults(block)
 
 							if HOLD_MATCHES {
 								block.Matched = blockQuery.Matched
 							}
+
 						}
 
 						if blockQuery != nil {
 							m.Lock()
 							count += blockQuery.MatchedCount
 							block_specs[block.Name] = blockQuery
+							if cachedSpec == nil && block.Info.NumRecords == int32(CHUNK_SIZE) {
+								to_cache_specs[block.Name] = blockQuery
+							}
 							m.Unlock()
 						}
 					} else { // Just doing a regular old block load
@@ -599,6 +603,24 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	if *FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "\n")
 	}
+
+	// NOW WE SAVE OUR QUERY CACHE HERE...
+	savestart := time.Now()
+	for blockName, blockQuery := range to_cache_specs {
+		if blockName == INGEST_DIR {
+			continue
+		}
+
+		blockQuery.SaveCachedResults(blockName)
+		fmt.Fprint(os.Stderr, "s")
+	}
+	saveend := time.Now()
+
+	if len(to_cache_specs) > 0 {
+		fmt.Fprint(os.Stderr, "\n")
+		Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+	}
+	// END QUERY CACHE SAVING
 
 	for _, broken_block_name := range broken_blocks {
 		Debug("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")

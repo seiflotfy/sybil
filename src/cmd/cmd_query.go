@@ -63,7 +63,7 @@ func addQueryFlags() {
 	TIME_FORMAT = flag.String("time-format", "", "time format to use")
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
-	//	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
+	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
 
 }
 
