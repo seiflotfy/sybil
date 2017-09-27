@@ -16,7 +16,7 @@ func (hc *HistCompat) Max() int64 {
 }
 
 func (hc *HistCompat) NewHist() Histogram {
-	return hc.table.NewHist(hc.info)
+	return hc.table.NewHist(&hc.info)
 }
 
 func (h *HistCompat) Mean() float64 {

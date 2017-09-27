@@ -223,12 +223,12 @@ func (h *MultiHist) Combine(oh interface{}) {
 
 func (h *MultiHist) TrackPercentiles() {
 	h.track_percentiles = true
-	bucket_size := (h.Max - h.Min)
+	BucketSize := (h.Max - h.Min)
 
 	// We create 1:1 buckets for the smallest bucket, then increase
 	// logarithmically
 	num_hists := 0
-	for t := bucket_size; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
+	for t := BucketSize; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
 		num_hists += 1
 	}
 	h.num_hists = num_hists
@@ -238,9 +238,9 @@ func (h *MultiHist) TrackPercentiles() {
 	right_edge := h.Max
 
 	for i := 0; i < num_hists; i++ {
-		bucket_size >>= HIST_FACTOR_POW
+		BucketSize >>= HIST_FACTOR_POW
 		info := IntInfo{}
-		info.Min = right_edge - bucket_size
+		info.Min = right_edge - BucketSize
 		info.Max = right_edge
 
 		right_edge = info.Min

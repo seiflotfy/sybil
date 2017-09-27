@@ -88,7 +88,10 @@ func (rs *Result) Combine(next_result *Result) {
 	for k, h := range next_result.Hists {
 		_, ok := rs.Hists[k]
 		if !ok {
-			rs.Hists[k] = h
+			nh := h.NewHist()
+
+			nh.Combine(h)
+			rs.Hists[k] = nh
 		} else {
 			rs.Hists[k].Combine(h)
 		}
