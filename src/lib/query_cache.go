@@ -160,6 +160,10 @@ func (qs *QuerySpec) LoadCachedResults(tb *TableBlock) bool {
 }
 
 func (qs *QuerySpec) SaveCachedResults(tb *TableBlock) {
+	if *FLAGS.CACHED_QUERIES == false {
+		return
+	}
+
 	go func() {
 		cache_key := qs.GetCacheKey(tb)
 

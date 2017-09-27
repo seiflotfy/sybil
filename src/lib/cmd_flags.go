@@ -43,7 +43,8 @@ type FlagDefs struct {
 	PROFILE     *bool
 	PROFILE_MEM *bool
 
-	RECYCLE_MEM *bool
+	RECYCLE_MEM    *bool
+	CACHED_QUERIES *bool
 
 	WEIGHT_COL *string
 
@@ -144,6 +145,7 @@ func SetDefaults() {
 	FLAGS.LUAFILE = &EMPTY
 
 	FLAGS.RECYCLE_MEM = &TRUE
+	FLAGS.CACHED_QUERIES = &TRUE
 
 	FLAGS.HDR_HIST = &FALSE
 	FLAGS.LOG_HIST = &FALSE

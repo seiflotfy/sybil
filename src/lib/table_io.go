@@ -326,6 +326,11 @@ func (t *Table) WriteBlockCache() {
 }
 
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
+
+	if *FLAGS.CACHED_QUERIES == false {
+		return nil, nil
+	}
+
 	tb := newTableBlock()
 	tb.Name = dirname
 	tb.table = t
