@@ -331,8 +331,6 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 	tb.table = t
 	info := t.LoadBlockInfo(dirname)
 
-	Debug("GETTING CACHED QUERY FOR", dirname)
-
 	if info == nil {
 		Debug("NO INFO FOR", dirname)
 		return nil, nil
@@ -351,7 +349,6 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 		t.BlockList[dirname] = &tb
 		t.block_m.Unlock()
 
-		Debug("LOADED CACHED QUERY BLOCKS", tb.Name)
 		return &tb, blockQuery
 
 	}
@@ -467,7 +464,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				} else {
 					block = cachedBlock
-					Debug("USING CACHED BLOCK", block.Name)
 				}
 
 				if *FLAGS.DEBUG {

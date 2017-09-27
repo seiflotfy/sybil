@@ -37,6 +37,7 @@ type SavedGrouping struct {
 type SavedAggregation struct {
 	Op   string
 	Name string
+	Type string
 }
 
 // for a per block query cache, we will have to clamp the time filters to the
@@ -108,7 +109,7 @@ func (qs *QuerySpec) GetCacheStruct(tb *TableBlock) QueryCacheKey {
 
 	cache_spec.Aggregations = make([]SavedAggregation, 0)
 	for _, g := range qs.Aggregations {
-		sg := SavedAggregation{g.op, g.name}
+		sg := SavedAggregation{g.op, g.name, g.hist_type}
 		cache_spec.Aggregations = append(cache_spec.Aggregations, sg)
 	}
 

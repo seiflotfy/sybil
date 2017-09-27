@@ -38,10 +38,11 @@ type Grouping struct {
 }
 
 type Aggregation struct {
-	op      string
-	op_id   int
-	name    string
-	name_id int16
+	op        string
+	op_id     int
+	name      string
+	name_id   int16
+	hist_type string
 }
 
 type Result struct {
@@ -127,6 +128,7 @@ func (t *Table) Grouping(name string) Grouping {
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
 	col_id := t.get_key_id(name)
+
 	agg := Aggregation{name: name, name_id: col_id, op: op}
 	if op == "avg" {
 		agg.op_id = OP_AVG
@@ -134,6 +136,15 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 
 	if op == "hist" {
 		agg.op_id = OP_HIST
+		agg.hist_type = "basic"
+		if *FLAGS.LOG_HIST {
+			agg.hist_type = "multi"
+
+		}
+
+		if *FLAGS.HDR_HIST {
+			agg.hist_type = "hdr"
+		}
 	}
 
 	if op == "distinct" {

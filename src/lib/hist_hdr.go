@@ -18,7 +18,7 @@ type HDRHist struct {
 	table *Table
 	info  *IntInfo
 
-	track_percentiles bool
+	TrackDist bool
 }
 
 func (th *HDRHist) NewHist() Histogram {

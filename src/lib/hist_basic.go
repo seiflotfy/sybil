@@ -8,11 +8,11 @@ import "strconv"
 // {{{ BASIC HIST
 
 type BasicHistCachedInfo struct {
-	NumBuckets        int
-	BucketSize        int
-	Values            []int64
-	Averages          []float64
-	track_percentiles bool
+	NumBuckets int
+	BucketSize int
+	Values     []int64
+	Averages   []float64
+	TrackDist  bool
 
 	outliers   []int64
 	underliers []int64
@@ -27,8 +27,8 @@ type BasicHist struct {
 	Count   int64
 	Avg     float64
 
-	table Table
-	info  IntInfo
+	table *Table
+	Info  IntInfo
 }
 
 func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
@@ -39,7 +39,7 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	h.Min = min
 	h.Max = max
 
-	if h.track_percentiles {
+	if h.TrackDist {
 
 		h.outliers = make([]int64, 0)
 		h.underliers = make([]int64, 0)
@@ -73,8 +73,8 @@ func (t *Table) NewHist(info *IntInfo) *HistCompat {
 
 	basic_hist := BasicHist{}
 	compat_hist := HistCompat{&basic_hist}
-	compat_hist.table = *t
-	compat_hist.info = *info
+	compat_hist.table = t
+	compat_hist.Info = *info
 
 	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
 		compat_hist.TrackPercentiles()
@@ -85,10 +85,9 @@ func (t *Table) NewHist(info *IntInfo) *HistCompat {
 }
 
 func (h *BasicHist) TrackPercentiles() {
-	Debug("TRACKING PERCENTILES")
-	h.track_percentiles = true
+	h.TrackDist = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.info.Min, h.info.Max)
+	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
 }
 
 func (h *BasicHist) addValue(value int64) {
@@ -102,9 +101,9 @@ func (h *BasicHist) Sum() int64 {
 func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
-	if value > h.info.Max*10 || value < h.info.Min {
+	if value > h.Info.Max*10 || value < h.Info.Min {
 		if DEBUG_OUTLIERS {
-			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
 		}
 		return
 	}
@@ -126,7 +125,7 @@ func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 		h.Min = value
 	}
 
-	if !h.track_percentiles {
+	if !h.TrackDist {
 		return
 	}
 
