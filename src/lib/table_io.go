@@ -606,20 +606,24 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()
-	for blockName, blockQuery := range to_cache_specs {
-		if blockName == INGEST_DIR {
-			continue
+
+	if *FLAGS.CACHED_QUERIES {
+		for blockName, blockQuery := range to_cache_specs {
+			if blockName == INGEST_DIR {
+				continue
+			}
+
+			blockQuery.SaveCachedResults(blockName)
+			fmt.Fprint(os.Stderr, "s")
 		}
+		saveend := time.Now()
 
-		blockQuery.SaveCachedResults(blockName)
-		fmt.Fprint(os.Stderr, "s")
+		if len(to_cache_specs) > 0 {
+			fmt.Fprint(os.Stderr, "\n")
+			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+		}
 	}
-	saveend := time.Now()
 
-	if len(to_cache_specs) > 0 {
-		fmt.Fprint(os.Stderr, "\n")
-		Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
-	}
 	// END QUERY CACHE SAVING
 
 	for _, broken_block_name := range broken_blocks {
