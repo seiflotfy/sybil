@@ -67,10 +67,9 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 func (t *Table) NewHist(info *IntInfo) *HistCompat {
 
 	basic_hist := BasicHist{}
-	compat_hist := HistCompat{&basic_hist, &basic_hist}
+	compat_hist := HistCompat{&basic_hist}
 	compat_hist.table = t
 	compat_hist.info = info
-	compat_hist.Histogram = &basic_hist
 
 	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
 		compat_hist.TrackPercentiles()

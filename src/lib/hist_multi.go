@@ -259,6 +259,5 @@ func (h *MultiHist) TrackPercentiles() {
 }
 
 func (h *MultiHist) Print() {
-
 	Debug("HIST COUNTS ARE", 0)
 }

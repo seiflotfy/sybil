@@ -13,12 +13,13 @@ type QuerySpec struct {
 	Limit      int16
 	TimeBucket int
 
-	Cumulative  *Result
-	Results     ResultMap
-	TimeResults map[int]ResultMap
-	Sorted      []*Result
-	Matched     RecordList
-	Sessions    SessionList
+	Cumulative   *Result
+	Results      ResultMap
+	TimeResults  map[int]ResultMap
+	Sorted       []*Result
+	Matched      RecordList
+	MatchedCount int
+	Sessions     SessionList
 
 	BlockList map[string]TableBlock
 	Table     *Table
@@ -87,10 +88,7 @@ func (rs *Result) Combine(next_result *Result) {
 	for k, h := range next_result.Hists {
 		_, ok := rs.Hists[k]
 		if !ok {
-			nh := h.NewHist()
-
-			nh.Combine(h)
-			rs.Hists[k] = nh
+			rs.Hists[k] = h
 		} else {
 			rs.Hists[k].Combine(h)
 		}

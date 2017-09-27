@@ -325,6 +325,41 @@ func (t *Table) WriteBlockCache() {
 
 }
 
+func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
+	tb := newTableBlock()
+	tb.Name = dirname
+	tb.table = t
+	info := t.LoadBlockInfo(dirname)
+
+	Debug("GETTING CACHED QUERY FOR", dirname)
+
+	if info == nil {
+		Debug("NO INFO FOR", dirname)
+		return nil, nil
+	}
+
+	if info.NumRecords <= 0 {
+		Debug("NO RECORDS FOR", dirname)
+		return nil, nil
+	}
+
+	tb.Info = info
+
+	blockQuery := CopyQuerySpec(querySpec)
+	if blockQuery.LoadCachedResults(&tb) {
+		t.block_m.Lock()
+		t.BlockList[dirname] = &tb
+		t.block_m.Unlock()
+
+		Debug("LOADED CACHED QUERY BLOCKS", tb.Name)
+		return &tb, blockQuery
+
+	}
+
+	return nil, nil
+
+}
+
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", *FLAGS.DIR, t.Name)
@@ -414,16 +449,34 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					return
 				}
 
-				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
-				if block == nil {
-					broken_mutex.Lock()
-					broken_blocks = append(broken_blocks, filename)
-					broken_mutex.Unlock()
-					return
+				var cachedSpec *QuerySpec
+				var cachedBlock *TableBlock
+
+				if querySpec != nil {
+					cachedBlock, cachedSpec = t.getCachedQueryForBlock(filename, querySpec)
+				}
+
+				var block *TableBlock
+				if cachedSpec == nil {
+					block = t.LoadBlockFromDir(filename, loadSpec, load_all)
+					if block == nil {
+						broken_mutex.Lock()
+						broken_blocks = append(broken_blocks, filename)
+						broken_mutex.Unlock()
+						return
+					}
+				} else {
+					block = cachedBlock
+					Debug("USING CACHED BLOCK", block.Name)
 				}
 
 				if *FLAGS.DEBUG {
-					fmt.Fprint(os.Stderr, ".")
+					if cachedSpec != nil {
+						fmt.Fprint(os.Stderr, "c")
+					} else {
+						fmt.Fprint(os.Stderr, ".")
+
+					}
 				}
 
 				end := time.Now()
@@ -435,21 +488,27 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				}
 
-				if len(block.RecordList) > 0 {
-
+				if len(block.RecordList) > 0 || cachedSpec != nil {
 					if querySpec != nil { // Load and Query
-						blockQuery := CopyQuerySpec(querySpec)
-						blockCount := FilterAndAggRecords(blockQuery, &block.RecordList)
+						blockQuery := cachedSpec
+						if blockQuery == nil {
+							blockQuery = CopyQuerySpec(querySpec)
+							blockQuery.MatchedCount = FilterAndAggRecords(blockQuery, &block.RecordList)
+							blockQuery.SaveCachedResults(block)
 
-						if HOLD_MATCHES {
-							block.Matched = blockQuery.Matched
+							if HOLD_MATCHES {
+								block.Matched = blockQuery.Matched
+							}
 						}
 
-						m.Lock()
-						count += blockCount
-						block_specs[block.Name] = blockQuery
-						m.Unlock()
+						if blockQuery != nil {
+							m.Lock()
+							count += blockQuery.MatchedCount
+							block_specs[block.Name] = blockQuery
+							m.Unlock()
+						}
 					} else { // Just doing a regular old block load
+						Debug("REGULAR BLOCK LOAD", block.Name)
 						m.Lock()
 						count += len(block.RecordList)
 						m.Unlock()
