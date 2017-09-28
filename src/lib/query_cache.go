@@ -126,7 +126,8 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(cache_spec)
 	if err != nil {
-		Error("encode:", err)
+		Warn("encode:", err)
+		return ""
 	}
 
 	h := md5.New()
@@ -137,6 +138,10 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
+	if *FLAGS.SAMPLES {
+		return false
+	}
+
 	cache_key := qs.GetCacheKey(blockname)
 
 	cache_dir := path.Join(blockname, "cache")
@@ -168,6 +173,10 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 
 func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	if *FLAGS.CACHED_QUERIES == false {
+		return
+	}
+
+	if *FLAGS.SAMPLES {
 		return
 	}
 
@@ -203,12 +212,14 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	}
 
 	if err != nil {
-		Error("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
+		Warn("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
+		return
 	}
 
 	_, err = buf.WriteTo(tempfile)
 	if err != nil {
-		Error("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
+		Warn("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
+		return
 	}
 
 	RenameAndMod(tempfile.Name(), filename)
