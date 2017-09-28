@@ -609,6 +609,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	if *FLAGS.CACHED_QUERIES {
 		for blockName, blockQuery := range to_cache_specs {
+
 			if blockName == INGEST_DIR {
 				continue
 			}
@@ -616,6 +617,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 			blockQuery.SaveCachedResults(blockName)
 			fmt.Fprint(os.Stderr, "s")
 		}
+
 		saveend := time.Now()
 
 		if len(to_cache_specs) > 0 {

@@ -7,6 +7,7 @@ import "fmt"
 import "path"
 import "io/ioutil"
 import "os"
+import "compress/gzip"
 
 type QueryCacheKey struct {
 	Filters      []Filter
@@ -148,17 +149,11 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 	cache_name := fmt.Sprintf("%s.db", cache_key)
 	filename := path.Join(cache_dir, cache_name)
 
-	file, err := os.Open(filename)
-	defer file.Close()
-	if err != nil {
-		return false
-	}
-
+	dec := GetFileDecoder(filename)
 	cachedSpec := SavedQueryResults{}
-	dec := gob.NewDecoder(file)
-	err = dec.Decode(&cachedSpec)
+	err := dec.Decode(&cachedSpec)
+
 	if err != nil {
-		Debug("ERROR DECODING CACHED FILE", err)
 		return false
 	}
 
@@ -195,7 +190,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	cache_dir := path.Join(blockname, "cache")
 	os.MkdirAll(cache_dir, 0777)
 
-	cache_name := fmt.Sprintf("%s.db", cache_key)
+	cache_name := fmt.Sprintf("%s.db.gz", cache_key)
 	filename := path.Join(cache_dir, cache_name)
 	tempfile, err := ioutil.TempFile(cache_dir, cache_name)
 	if err != nil {
@@ -205,6 +200,11 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err = enc.Encode(cachedInfo)
+
+	var gbuf bytes.Buffer
+	w := gzip.NewWriter(&gbuf)
+	w.Write(buf.Bytes())
+	w.Close() // You must close this first to flush the bytes to the buffer.
 
 	if err != nil {
 		Warn("cached query encoding error:", err)
@@ -216,13 +216,17 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 		return
 	}
 
-	_, err = buf.WriteTo(tempfile)
+	_, err = gbuf.WriteTo(tempfile)
 	if err != nil {
 		Warn("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
 		return
 	}
 
-	RenameAndMod(tempfile.Name(), filename)
+	tempfile.Close()
+	err = RenameAndMod(tempfile.Name(), filename)
+	if err != nil {
+		Warn("ERROR RENAMING", tempfile.Name())
+	}
 
 	return
 
