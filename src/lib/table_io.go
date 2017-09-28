@@ -325,43 +325,6 @@ func (t *Table) WriteBlockCache() {
 
 }
 
-func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
-
-	if *FLAGS.CACHED_QUERIES == false {
-		return nil, nil
-	}
-
-	tb := newTableBlock()
-	tb.Name = dirname
-	tb.table = t
-	info := t.LoadBlockInfo(dirname)
-
-	if info == nil {
-		Debug("NO INFO FOR", dirname)
-		return nil, nil
-	}
-
-	if info.NumRecords <= 0 {
-		Debug("NO RECORDS FOR", dirname)
-		return nil, nil
-	}
-
-	tb.Info = info
-
-	blockQuery := CopyQuerySpec(querySpec)
-	if blockQuery.LoadCachedResults(tb.Name) {
-		t.block_m.Lock()
-		t.BlockList[dirname] = &tb
-		t.block_m.Unlock()
-
-		return &tb, blockQuery
-
-	}
-
-	return nil, nil
-
-}
-
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", *FLAGS.DIR, t.Name)

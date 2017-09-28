@@ -11,8 +11,8 @@ import "compress/gzip"
 
 type QueryCacheKey struct {
 	Filters      []Filter
-	Groups       []SavedGrouping
-	Aggregations []SavedAggregation
+	Groups       []Grouping
+	Aggregations []Aggregation
 
 	OrderBy    string
 	Limit      int16
@@ -22,23 +22,50 @@ type QueryCacheKey struct {
 }
 
 type SavedQueryResults struct {
-	//	Cumulative   *Result
 	Results     ResultMap
 	TimeResults map[int]ResultMap
+	//	Cumulative   *Result
 	//	Sorted       []*Result
 	//	Matched      RecordList
 	//	MatchedCount int
 	//	Sessions     SessionList
 }
 
-type SavedGrouping struct {
-	Name string
-}
+func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
-type SavedAggregation struct {
-	Op   string
-	Name string
-	Type string
+	if *FLAGS.CACHED_QUERIES == false {
+		return nil, nil
+	}
+
+	tb := newTableBlock()
+	tb.Name = dirname
+	tb.table = t
+	info := t.LoadBlockInfo(dirname)
+
+	if info == nil {
+		Debug("NO INFO FOR", dirname)
+		return nil, nil
+	}
+
+	if info.NumRecords <= 0 {
+		Debug("NO RECORDS FOR", dirname)
+		return nil, nil
+	}
+
+	tb.Info = info
+
+	blockQuery := CopyQuerySpec(querySpec)
+	if blockQuery.LoadCachedResults(tb.Name) {
+		t.block_m.Lock()
+		t.BlockList[dirname] = &tb
+		t.block_m.Unlock()
+
+		return &tb, blockQuery
+
+	}
+
+	return nil, nil
+
 }
 
 // for a per block query cache, we will have to clamp the time filters to the
@@ -101,19 +128,11 @@ func (querySpec *QuerySpec) GetRelevantFilters(blockname string) []Filter {
 func (qs *QuerySpec) GetCacheStruct(blockname string) QueryCacheKey {
 	cache_spec := QueryCacheKey{}
 
-	// CLAMP OUT FILTERS
+	// CLAMP OUT TRIVIAL FILTERS
 	cache_spec.Filters = qs.GetRelevantFilters(blockname)
-	cache_spec.Groups = make([]SavedGrouping, 0)
-	for _, g := range qs.Groups {
-		sg := SavedGrouping{g.name}
-		cache_spec.Groups = append(cache_spec.Groups, sg)
-	}
 
-	cache_spec.Aggregations = make([]SavedAggregation, 0)
-	for _, g := range qs.Aggregations {
-		sg := SavedAggregation{g.op, g.name, g.hist_type}
-		cache_spec.Aggregations = append(cache_spec.Aggregations, sg)
-	}
+	cache_spec.Groups = qs.Groups
+	cache_spec.Aggregations = qs.Aggregations
 
 	cache_spec.Limit = qs.Limit
 	cache_spec.TimeBucket = qs.TimeBucket
