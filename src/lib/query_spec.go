@@ -4,7 +4,21 @@ import "C"
 
 type ResultMap map[string]*Result
 
+// This info gets cached when we use
+// the query cache. anything in the main
+// QuerySpec will not get cached
+type SavedQueryResults struct {
+	Cumulative   *Result
+	Results      ResultMap
+	TimeResults  map[int]ResultMap
+	MatchedCount int
+	Sorted       []*Result
+	Matched      RecordList
+}
+
 type QuerySpec struct {
+	SavedQueryResults
+
 	Filters      []Filter
 	Groups       []Grouping
 	Aggregations []Aggregation
@@ -13,16 +27,10 @@ type QuerySpec struct {
 	Limit      int16
 	TimeBucket int
 
-	Cumulative   *Result
-	Results      ResultMap
-	TimeResults  map[int]ResultMap
-	Sorted       []*Result
-	Matched      RecordList
-	MatchedCount int
-	Sessions     SessionList
-
 	BlockList map[string]TableBlock
 	Table     *Table
+
+	Sessions SessionList
 
 	LuaResult LuaTable
 	LuaState  *C.struct_lua_State

@@ -381,6 +381,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	count := 0
+	cached_count := 0
+	cached_blocks := 0
 	skipped := 0
 	broken_count := 0
 	this_block := 0
@@ -424,6 +426,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				var block *TableBlock
 				if cachedSpec == nil {
+					// couldnt load the cached query results
 					block = t.LoadBlockFromDir(filename, loadSpec, load_all)
 					if block == nil {
 						broken_mutex.Lock()
@@ -432,6 +435,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						return
 					}
 				} else {
+					// we are using cached query results
 					block = cachedBlock
 				}
 
@@ -468,11 +472,17 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 						if blockQuery != nil {
 							m.Lock()
-							count += blockQuery.MatchedCount
-							block_specs[block.Name] = blockQuery
-							if cachedSpec == nil && block.Info.NumRecords == int32(CHUNK_SIZE) {
-								to_cache_specs[block.Name] = blockQuery
+							if cachedSpec != nil {
+								cached_count += blockQuery.MatchedCount
+								cached_blocks += 1
+
+							} else {
+								count += blockQuery.MatchedCount
+								if block.Info.NumRecords == int32(CHUNK_SIZE) {
+									to_cache_specs[block.Name] = blockQuery
+								}
 							}
+							block_specs[block.Name] = blockQuery
 							m.Unlock()
 						}
 					} else { // Just doing a regular old block load
@@ -618,6 +628,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
+	Debug("SKIPPED", cached_blocks, "BLOCKS &", cached_count, "RECORDS BASED ON QUERY CACHE")
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
@@ -637,7 +648,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	end := time.Now()
 
 	if loadSpec != nil {
-		Debug("LOADED", count, "RECORDS FROM BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+		used_blocks := this_block - cached_blocks - len(broken_blocks)
+		Debug("LOADED", count, "RECORDS FROM", used_blocks, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}

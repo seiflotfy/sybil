@@ -21,16 +21,6 @@ type QueryCacheKey struct {
 	CachedResults SavedQueryResults
 }
 
-type SavedQueryResults struct {
-	Results     ResultMap
-	TimeResults map[int]ResultMap
-	//	Cumulative   *Result
-	//	Sorted       []*Result
-	//	Matched      RecordList
-	//	MatchedCount int
-	//	Sessions     SessionList
-}
-
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
 	if *FLAGS.CACHED_QUERIES == false {
@@ -176,11 +166,7 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 		return false
 	}
 
-	qs.Results = cachedSpec.Results
-	qs.TimeResults = cachedSpec.TimeResults
-	//	qs.Cumulative = cachedSpec.Cumulative
-	//	qs.Sorted = cachedSpec.Sorted
-	//	qs.Matched = cachedSpec.Matched
+	qs.SavedQueryResults = cachedSpec
 
 	return true
 }
@@ -202,9 +188,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 
 	cache_key := qs.GetCacheKey(blockname)
 
-	cachedInfo := SavedQueryResults{}
-	cachedInfo.Results = qs.Results
-	cachedInfo.TimeResults = qs.TimeResults
+	cachedInfo := qs.SavedQueryResults
 
 	cache_dir := path.Join(blockname, "cache")
 	os.MkdirAll(cache_dir, 0777)
