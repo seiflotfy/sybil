@@ -486,7 +486,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							m.Unlock()
 						}
 					} else { // Just doing a regular old block load
-						Debug("REGULAR BLOCK LOAD", block.Name)
+						// QUERY SPEC IS NUL?
 						m.Lock()
 						count += len(block.RecordList)
 						m.Unlock()
