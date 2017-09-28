@@ -64,13 +64,4 @@ func (th *HDRHist) GetBuckets() map[string]int64 {
 
 }
 
-func (h *HDRHist) AssignableTo(Type interface{}) bool {
-	switch Type.(type) {
-	case Histogram:
-		return true
-	default:
-		return false
-	}
-}
-
 // }}} HDR HIST
