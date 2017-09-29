@@ -162,6 +162,4 @@ func SetDefaults() {
 
 	initLua()
 
-	registerTypes()
-
 }

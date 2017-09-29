@@ -23,7 +23,7 @@ func run_tests(m *testing.M) {
 }
 
 func setup_test_vars(chunk_size int) {
-	sybil.SetDefaults()
+	sybil.Startup()
 	sybil.FLAGS.TABLE = &TEST_TABLE_NAME
 
 	sybil.TEST_MODE = true
