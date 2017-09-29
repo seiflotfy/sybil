@@ -10,7 +10,7 @@ type MultiHist struct {
 	Count   int64
 	Avg     float64
 
-	TrackDist bool
+	PercentileMode bool
 
 	Subhists []*HistCompat
 	Info     *IntInfo
@@ -74,7 +74,7 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		h.Min = value
 	}
 
-	if !h.TrackDist {
+	if !h.PercentileMode {
 		return
 	}
 
@@ -221,7 +221,7 @@ func (h *MultiHist) Combine(oh interface{}) {
 }
 
 func (h *MultiHist) TrackPercentiles() {
-	h.TrackDist = true
+	h.PercentileMode = true
 	BucketSize := (h.Max - h.Min)
 
 	// We create 1:1 buckets for the smallest bucket, then increase

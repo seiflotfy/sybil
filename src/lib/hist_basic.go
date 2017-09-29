@@ -8,27 +8,27 @@ import "strconv"
 // {{{ BASIC HIST
 
 type BasicHistCachedInfo struct {
-	NumBuckets int
-	BucketSize int
-	Values     []int64
-	Averages   []float64
-	TrackDist  bool
+	NumBuckets     int
+	BucketSize     int
+	Values         []int64
+	Averages       []float64
+	PercentileMode bool
 
 	Outliers   []int64
 	Underliers []int64
-}
-
-type BasicHist struct {
-	BasicHistCachedInfo
 
 	Max     int64
 	Min     int64
 	Samples int
 	Count   int64
 	Avg     float64
+	Info    IntInfo
+}
+
+type BasicHist struct {
+	BasicHistCachedInfo
 
 	table *Table
-	Info  IntInfo
 }
 
 func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
@@ -39,7 +39,7 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	h.Min = min
 	h.Max = max
 
-	if h.TrackDist {
+	if h.PercentileMode {
 
 		h.Outliers = make([]int64, 0)
 		h.Underliers = make([]int64, 0)
@@ -85,7 +85,7 @@ func (t *Table) NewHist(info *IntInfo) *HistCompat {
 }
 
 func (h *BasicHist) TrackPercentiles() {
-	h.TrackDist = true
+	h.PercentileMode = true
 
 	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
 }
@@ -125,7 +125,7 @@ func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 		h.Min = value
 	}
 
-	if !h.TrackDist {
+	if !h.PercentileMode {
 		return
 	}
 
