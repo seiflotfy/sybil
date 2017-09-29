@@ -14,8 +14,8 @@ type BasicHistCachedInfo struct {
 	Averages   []float64
 	TrackDist  bool
 
-	outliers   []int64
-	underliers []int64
+	Outliers   []int64
+	Underliers []int64
 }
 
 type BasicHist struct {
@@ -41,8 +41,8 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 
 	if h.TrackDist {
 
-		h.outliers = make([]int64, 0)
-		h.underliers = make([]int64, 0)
+		h.Outliers = make([]int64, 0)
+		h.Underliers = make([]int64, 0)
 
 		size := int64(max - min)
 		h.NumBuckets = buckets
@@ -132,12 +132,12 @@ func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 	bucket_value := (value - h.Min) / int64(h.BucketSize)
 
 	if bucket_value >= int64(len(h.Values)) {
-		h.outliers = append(h.outliers, value)
+		h.Outliers = append(h.Outliers, value)
 		bucket_value = int64(len(h.Values) - 1)
 	}
 
 	if bucket_value < 0 {
-		h.underliers = append(h.underliers, value)
+		h.Underliers = append(h.Underliers, value)
 		bucket_value = 0
 	}
 
@@ -203,13 +203,13 @@ func (h *BasicHist) GetStdDev() float64 {
 		sum_variance += (float64(delta*delta) * ratio)
 	}
 
-	for _, val := range h.outliers {
+	for _, val := range h.Outliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
 		sum_variance += (float64(delta) * ratio)
 	}
 
-	for _, val := range h.underliers {
+	for _, val := range h.Underliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
 		sum_variance += (float64(delta) * ratio)
@@ -227,11 +227,11 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 		}
 	}
 
-	for _, v := range h.outliers {
+	for _, v := range h.Outliers {
 		ret[int64(v)] += 1
 	}
 
-	for _, v := range h.underliers {
+	for _, v := range h.Underliers {
 		ret[int64(v)] += 1
 	}
 
@@ -245,11 +245,11 @@ func (h *BasicHist) GetBuckets() map[string]int64 {
 		ret[strconv.FormatInt(int64(k)*int64(h.BucketSize)+h.Min, 10)] = v
 	}
 
-	for _, v := range h.outliers {
+	for _, v := range h.Outliers {
 		ret[strconv.FormatInt(int64(v), 10)] += 1
 	}
 
-	for _, v := range h.underliers {
+	for _, v := range h.Underliers {
 		ret[strconv.FormatInt(int64(v), 10)] += 1
 	}
 
