@@ -415,6 +415,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	count := 0
 	cached_count := 0
 	cached_blocks := 0
+	loaded_count := 0
 	skipped := 0
 	broken_count := 0
 	this_block := 0
@@ -510,6 +511,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 							} else {
 								count += blockQuery.MatchedCount
+								loaded_count += 1
 								if block.Info.NumRecords == int32(CHUNK_SIZE) {
 									to_cache_specs[block.Name] = blockQuery
 								}
@@ -639,8 +641,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	Debug("SKIPPED", cached_blocks, "BLOCKS &", cached_count, "RECORDS BASED ON QUERY CACHE")
 	end := time.Now()
 	if loadSpec != nil {
-		used_blocks := this_block - cached_blocks - len(broken_blocks)
-		Debug("LOADED", count, "RECORDS FROM", used_blocks, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+		Debug("LOADED", count, "RECORDS FROM", loaded_count, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
