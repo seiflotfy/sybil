@@ -629,6 +629,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
 	Debug("SKIPPED", cached_blocks, "BLOCKS &", cached_count, "RECORDS BASED ON QUERY CACHE")
+	end := time.Now()
+	if loadSpec != nil {
+		used_blocks := this_block - cached_blocks - len(broken_blocks)
+		Debug("LOADED", count, "RECORDS FROM", used_blocks, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+	} else {
+		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
+	}
+
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
@@ -643,15 +651,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.TimeResults = resultSpec.TimeResults
 
 		SortResults(querySpec)
-	}
-
-	end := time.Now()
-
-	if loadSpec != nil {
-		used_blocks := this_block - cached_blocks - len(broken_blocks)
-		Debug("LOADED", count, "RECORDS FROM", used_blocks, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
-	} else {
-		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	t.WriteBlockCache()
