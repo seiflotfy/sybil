@@ -279,6 +279,38 @@ func (t *Table) ResetBlockCache() {
 	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
 }
 
+func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
+
+	// NOW WE SAVE OUR QUERY CACHE HERE...
+	savestart := time.Now()
+
+	if *FLAGS.CACHED_QUERIES {
+		for blockName, blockQuery := range to_cache_specs {
+
+			if blockName == INGEST_DIR {
+				continue
+			}
+
+			blockQuery.SaveCachedResults(blockName)
+			if *FLAGS.DEBUG {
+				fmt.Fprint(os.Stderr, "s")
+			}
+		}
+
+		saveend := time.Now()
+
+		if len(to_cache_specs) > 0 {
+			if *FLAGS.DEBUG {
+				fmt.Fprint(os.Stderr, "\n")
+			}
+			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+		}
+	}
+
+	// END QUERY CACHE SAVING
+
+}
+
 func (t *Table) WriteBlockCache() {
 	if len(t.NewBlockInfos) == 0 {
 		return
@@ -486,7 +518,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							m.Unlock()
 						}
 					} else { // Just doing a regular old block load
-						// QUERY SPEC IS NUL?
+						// QUERY SPEC IS NULL
 						m.Lock()
 						count += len(block.RecordList)
 						m.Unlock()
@@ -577,30 +609,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
-	// NOW WE SAVE OUR QUERY CACHE HERE...
-	savestart := time.Now()
-
-	if *FLAGS.CACHED_QUERIES {
-		for blockName, blockQuery := range to_cache_specs {
-
-			if blockName == INGEST_DIR {
-				continue
-			}
-
-			blockQuery.SaveCachedResults(blockName)
-			fmt.Fprint(os.Stderr, "s")
-		}
-
-		saveend := time.Now()
-
-		if len(to_cache_specs) > 0 {
-			fmt.Fprint(os.Stderr, "\n")
-			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
-		}
-	}
-
-	// END QUERY CACHE SAVING
-
 	for _, broken_block_name := range broken_blocks {
 		Debug("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
 	}
@@ -636,6 +644,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	} else {
 		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
+
+	// NOTE: we have to write the query cache before we combine our results,
+	// bc combining results is not idempotent
+	t.WriteQueryCache(to_cache_specs)
 
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
