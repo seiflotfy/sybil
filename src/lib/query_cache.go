@@ -148,8 +148,13 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
+	if *FLAGS.CACHED_QUERIES == false {
+		return false
+	}
+
 	if *FLAGS.SAMPLES {
 		return false
+
 	}
 
 	cache_key := qs.GetCacheKey(blockname)

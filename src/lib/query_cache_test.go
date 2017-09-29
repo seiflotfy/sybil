@@ -4,6 +4,7 @@ import sybil "./"
 
 import "testing"
 import "math/rand"
+import "math"
 import "strconv"
 
 func TestCachedQueries(test *testing.T) {
@@ -51,12 +52,13 @@ func testCachedQueryFiles(test *testing.T) {
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []sybil.Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
 	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
 	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
+	// test that the cached query doesnt already exist
 	nt.LoadAndQueryRecords(&loadSpec, nil)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
@@ -65,15 +67,34 @@ func testCachedQueryFiles(test *testing.T) {
 		}
 	}
 
+	// test that the cached query is saved
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
-
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		// Test Filtering to 20..
 		if loaded != true {
 			test.Error("Did not correctly save and load query results")
 		}
 	}
+
+	sybil.FLAGS.CACHED_QUERIES = &sybil.FALSE
+	for _, b := range nt.BlockList {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded == true {
+			test.Error("Used query cache when flag was not provided")
+		}
+	}
+	sybil.FLAGS.CACHED_QUERIES = &sybil.TRUE
+
+	// test that a new and slightly different query isnt cached for us
+	nt.LoadAndQueryRecords(&loadSpec, nil)
+	querySpec.Aggregations = append(aggs, nt.Aggregation("id", "hist"))
+	for _, b := range nt.BlockList {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded == true {
+			test.Error("Test DB has query results for new query")
+		}
+	}
+
 }
 
 func testCachedQueryConsistency(test *testing.T) {
@@ -82,7 +103,7 @@ func testCachedQueryConsistency(test *testing.T) {
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []sybil.Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
 	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
 	loadSpec := sybil.NewLoadSpec()
@@ -122,7 +143,6 @@ func testCachedQueryConsistency(test *testing.T) {
 
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		// Test Filtering to 20..
 		if loaded != true {
 			test.Error("Did not correctly save and load query results")
 		}
@@ -132,71 +152,81 @@ func testCachedQueryConsistency(test *testing.T) {
 
 func testCachedBasicHist(test *testing.T) {
 	nt := sybil.GetTable(TEST_TABLE_NAME)
-	filters := []sybil.Filter{}
-	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
-	aggs := []sybil.Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
-
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
-	HIST := "hist"
-	sybil.FLAGS.OP = &HIST
-	loadSpec := sybil.NewLoadSpec()
-	loadSpec.LoadAllColumns = true
-
-	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
-	copySpec := sybil.CopyQuerySpec(&querySpec)
-
-	nt = sybil.GetTable(TEST_TABLE_NAME)
-
-	// clear the copied query spec result map and look
-	// at the cached query results
-
-	copySpec.Results = make(sybil.ResultMap, 0)
-	nt.LoadAndQueryRecords(&loadSpec, copySpec)
-
-	if len(querySpec.Results) == 0 {
-		test.Error("No Results for Query")
-	}
-
-	for k, v := range querySpec.Results {
-		v2, ok := copySpec.Results[k]
-		if !ok {
-			test.Error("Result Mismatch!", k, v)
+	for _, hist_type := range []string{"basic", "loghist"} {
+		// set query flags as early as possible
+		if hist_type == "loghist" {
+			sybil.FLAGS.LOG_HIST = &sybil.TRUE
+		} else {
+			sybil.FLAGS.LOG_HIST = &sybil.FALSE
 		}
 
-		if v.Count != v2.Count {
-			test.Error("Count Mismatch", v, v2, v.Count, v2.Count)
+		HIST := "hist"
+		sybil.FLAGS.OP = &HIST
+
+		filters := []sybil.Filter{}
+		filters = append(filters, nt.IntFilter("age", "lt", 20))
+		aggs := []sybil.Aggregation{}
+		aggs = append(aggs, nt.Aggregation("age", "hist"))
+
+		querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
+
+		loadSpec := sybil.NewLoadSpec()
+		loadSpec.LoadAllColumns = true
+
+		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
+		copySpec := sybil.CopyQuerySpec(&querySpec)
+
+		nt = sybil.GetTable(TEST_TABLE_NAME)
+
+		// clear the copied query spec result map and look
+		// at the cached query results
+
+		copySpec.Results = make(sybil.ResultMap, 0)
+		nt.LoadAndQueryRecords(&loadSpec, copySpec)
+
+		if len(querySpec.Results) == 0 {
+			test.Error("No Results for Query")
 		}
 
-		if v.Samples != v2.Samples {
-			Debug(v, v2)
-			test.Error("Samples Mismatch", v, v2, v.Samples, v2.Samples)
-		}
-
-		for k, h := range v.Hists {
-			h2, ok := v2.Hists[k]
+		for k, v := range querySpec.Results {
+			v2, ok := copySpec.Results[k]
 			if !ok {
-				test.Error("Missing Histogram", v, v2)
+				test.Error("Result Mismatch!", hist_type, k, v)
 			}
 
-			if h.StdDev() <= 0 {
-				test.Error("Missing StdDev", h, h.StdDev())
+			if v.Count != v2.Count {
+				test.Error("Count Mismatch", hist_type, v, v2, v.Count, v2.Count)
 			}
 
-			if h.StdDev() != h2.StdDev() {
-				test.Error("StdDev MisMatch", h, h2)
+			if v.Samples != v2.Samples {
+				Debug(v, v2)
+				test.Error("Samples Mismatch", hist_type, v, v2, v.Samples, v2.Samples)
+			}
+
+			for k, h := range v.Hists {
+				h2, ok := v2.Hists[k]
+				if !ok {
+					test.Error("Missing Histogram", hist_type, v, v2)
+				}
+
+				if h.StdDev() <= 0 {
+					test.Error("Missing StdDev", hist_type, h, h.StdDev())
+				}
+
+				if math.Abs(h.StdDev()-h2.StdDev()) > 0.1 {
+					test.Error("StdDev MisMatch", hist_type, h, h2)
+				}
+
 			}
 
 		}
 
-	}
-
-	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
-		// Test Filtering to 20..
-		if loaded != true {
-			test.Error("Did not correctly save and load query results")
+		for _, b := range nt.BlockList {
+			loaded := querySpec.LoadCachedResults(b.Name)
+			if loaded != true {
+				test.Error("Did not correctly save and load query results")
+			}
 		}
 	}
 
