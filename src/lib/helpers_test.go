@@ -82,7 +82,7 @@ func new_query_spec() *sybil.QuerySpec {
 	aggs := []sybil.Aggregation{}
 	groupings := []sybil.Grouping{}
 
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryDetails: sybil.QueryDetails{Groups: groupings, Filters: filters, Aggregations: aggs}}
 
 	return &querySpec
 }

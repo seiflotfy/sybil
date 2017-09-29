@@ -19,18 +19,6 @@ func registerTypesForQueryCache() {
 	gob.Register(&MultiHistCompat{})
 }
 
-type QueryCacheKey struct {
-	Filters      []Filter
-	Groups       []Grouping
-	Aggregations []Aggregation
-
-	OrderBy    string
-	Limit      int16
-	TimeBucket int
-
-	CachedResults SavedQueryResults
-}
-
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
 	if *FLAGS.CACHED_QUERIES == false {
@@ -70,8 +58,7 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 // for a per block query cache, we will have to clamp the time filters to the
 // query block's extents.
-
-func (querySpec *QuerySpec) GetRelevantFilters(blockname string) []Filter {
+func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 
 	filters := make([]Filter, 0)
 	if querySpec == nil {
@@ -125,20 +112,15 @@ func (querySpec *QuerySpec) GetRelevantFilters(blockname string) []Filter {
 
 }
 
-func (qs *QuerySpec) GetCacheStruct(blockname string) QueryCacheKey {
-	cache_spec := QueryCacheKey{}
+func (qs *QuerySpec) GetCacheStruct(blockname string) QueryDetails {
+	cache_spec := QueryDetails(qs.QueryDetails)
 
 	// CLAMP OUT TRIVIAL FILTERS
-	cache_spec.Filters = qs.GetRelevantFilters(blockname)
-
-	cache_spec.Groups = qs.Groups
-	cache_spec.Aggregations = qs.Aggregations
-
-	cache_spec.Limit = qs.Limit
-	cache_spec.TimeBucket = qs.TimeBucket
+	cache_spec.Filters = qs.GetCacheRelevantFilters(blockname)
 
 	return cache_spec
 }
+
 func (qs *QuerySpec) GetCacheKey(blockname string) string {
 	cache_spec := qs.GetCacheStruct(blockname)
 
@@ -174,14 +156,14 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 	filename := path.Join(cache_dir, cache_name)
 
 	dec := GetFileDecoder(filename)
-	cachedSpec := SavedQueryResults{}
+	cachedSpec := QueryResults{}
 	err := dec.Decode(&cachedSpec)
 
 	if err != nil {
 		return false
 	}
 
-	qs.SavedQueryResults = cachedSpec
+	qs.QueryResults = cachedSpec
 
 	return true
 }
@@ -203,7 +185,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 
 	cache_key := qs.GetCacheKey(blockname)
 
-	cachedInfo := qs.SavedQueryResults
+	cachedInfo := qs.QueryResults
 
 	cache_dir := path.Join(blockname, "cache")
 	os.MkdirAll(cache_dir, 0777)

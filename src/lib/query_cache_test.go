@@ -54,7 +54,8 @@ func testCachedQueryFiles(test *testing.T) {
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
+	querySpec := sybil.QuerySpec{Table: nt,
+		QueryDetails: sybil.QueryDetails{Filters: filters, Aggregations: aggs}}
 	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
@@ -105,7 +106,8 @@ func testCachedQueryConsistency(test *testing.T) {
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
+	querySpec := sybil.QuerySpec{Table: nt,
+		QueryDetails: sybil.QueryDetails{Filters: filters, Aggregations: aggs}}
 	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
@@ -169,7 +171,8 @@ func testCachedBasicHist(test *testing.T) {
 		aggs := []sybil.Aggregation{}
 		aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-		querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Table: nt}
+		querySpec := sybil.QuerySpec{Table: nt,
+			QueryDetails: sybil.QueryDetails{Filters: filters, Aggregations: aggs}}
 
 		loadSpec := sybil.NewLoadSpec()
 		loadSpec.LoadAllColumns = true

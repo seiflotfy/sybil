@@ -168,7 +168,8 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	query_details := sybil.QueryDetails{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryDetails: query_details}
 
 	for _, v := range groups {
 		switch t.GetColumnType(v) {

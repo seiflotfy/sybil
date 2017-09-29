@@ -7,7 +7,7 @@ type ResultMap map[string]*Result
 // This info gets cached when we use
 // the query cache. anything in the main
 // QuerySpec will not get cached
-type SavedQueryResults struct {
+type savedQueryResults struct {
 	Cumulative   *Result
 	Results      ResultMap
 	TimeResults  map[int]ResultMap
@@ -16,9 +16,7 @@ type SavedQueryResults struct {
 	Matched      RecordList
 }
 
-type QuerySpec struct {
-	SavedQueryResults
-
+type savedQueryDetails struct {
 	Filters      []Filter
 	Groups       []Grouping
 	Aggregations []Aggregation
@@ -26,6 +24,15 @@ type QuerySpec struct {
 	OrderBy    string
 	Limit      int16
 	TimeBucket int
+}
+
+// For outside consumption
+type QueryDetails savedQueryDetails
+type QueryResults savedQueryResults
+
+type QuerySpec struct {
+	QueryResults
+	QueryDetails
 
 	BlockList map[string]TableBlock
 	Table     *Table

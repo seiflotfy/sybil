@@ -491,7 +491,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				if len(block.RecordList) > 0 || cachedSpec != nil {
-					if querySpec != nil { // Load and Query
+					if querySpec == nil {
+						m.Lock()
+						count += len(block.RecordList)
+						m.Unlock()
+					} else { // Load and Query
 						blockQuery := cachedSpec
 						if blockQuery == nil {
 							blockQuery = CopyQuerySpec(querySpec)
@@ -519,11 +523,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							block_specs[block.Name] = blockQuery
 							m.Unlock()
 						}
-					} else { // Just doing a regular old block load
-						// QUERY SPEC IS NULL
-						m.Lock()
-						count += len(block.RecordList)
-						m.Unlock()
 					}
 
 				}
@@ -599,9 +598,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		wg.Add(1)
 		go func() {
 			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
-			m.Lock()
 			logend = time.Now()
-			m.Unlock()
 		}()
 	}
 
