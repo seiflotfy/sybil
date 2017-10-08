@@ -5,7 +5,7 @@ import "flag"
 import "strings"
 
 func runIndexCmdLine() {
-	var f_INTS = flag.String("int", "", "Integer values to index")
+	var fInts = flag.String("int", "", "Integer values to index")
 	flag.Parse()
 	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
@@ -13,11 +13,11 @@ func runIndexCmdLine() {
 	}
 
 	var ints []string
-	if *f_INTS != "" {
-		ints = strings.Split(*f_INTS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if *fInts != "" {
+		ints = strings.Split(*fInts, *sybil.FLAGS.FIELD_SEPARATOR)
 	}
 
-	sybil.FLAGS.UPDATE_TABLE_INFO = &TRUE
+	sybil.FLAGS.UPDATE_TABLE_INFO = &trueFlag
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 

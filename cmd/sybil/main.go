@@ -7,26 +7,31 @@ import "os"
 import "log"
 import "sort"
 
-var CMD_FUNCS = make(map[string]func())
-var CMD_KEYS = make([]string, 0)
+var (
+	cmdFuncs  = make(map[string]func())
+	cmdKeys   = make([]string, 0)
+	falseFlag = false
+	trueFlag  = true
+	testMode  = false
+)
 
 func setupCommands() {
-	CMD_FUNCS["ingest"] = runIngestCmdLine
-	CMD_FUNCS["digest"] = runDigestCmdLine
-	CMD_FUNCS["session"] = runSessionizeCmdLine
-	CMD_FUNCS["trim"] = runTrimCmdLine
-	CMD_FUNCS["query"] = runQueryCmdLine
-	CMD_FUNCS["index"] = runIndexCmdLine
-	CMD_FUNCS["rebuild"] = runRebuildCmdLine
-	CMD_FUNCS["inspect"] = runInspectCmdLine
-	CMD_FUNCS["version"] = runVersionCmdLine
+	cmdFuncs["ingest"] = runIngestCmdLine
+	cmdFuncs["digest"] = runDigestCmdLine
+	cmdFuncs["session"] = runSessionizeCmdLine
+	cmdFuncs["trim"] = runTrimCmdLine
+	cmdFuncs["query"] = runQueryCmdLine
+	cmdFuncs["index"] = runIndexCmdLine
+	cmdFuncs["rebuild"] = runRebuildCmdLine
+	cmdFuncs["inspect"] = runInspectCmdLine
+	cmdFuncs["version"] = runVersionCmdLine
 
-	for k, _ := range CMD_FUNCS {
-		CMD_KEYS = append(CMD_KEYS, k)
+	for k := range cmdFuncs {
+		cmdKeys = append(cmdKeys, k)
 	}
 }
 
-var USAGE = `sybil: a fast and simple NoSQL column store
+var usage = `sybil: a fast and simple NoSQL column store
 
 Commands: ingest, digest, trim, query, session, rebuild, inspect
 
@@ -76,9 +81,9 @@ Emergency Maintenance Commands:
 `
 
 func printCommandHelp() {
-	sort.Strings(CMD_KEYS)
+	sort.Strings(cmdKeys)
 
-	fmt.Print(USAGE)
+	fmt.Print(usage)
 	log.Fatal()
 }
 
@@ -89,12 +94,12 @@ func main() {
 		printCommandHelp()
 	}
 
-	first_arg := os.Args[1]
+	firstArg := os.Args[1]
 	os.Args = os.Args[1:]
 
 	sybil.Startup()
 
-	handler, ok := CMD_FUNCS[first_arg]
+	handler, ok := cmdFuncs[firstArg]
 	if !ok {
 		printCommandHelp()
 	}

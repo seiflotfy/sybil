@@ -122,11 +122,11 @@ func runQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.LOAD_THEN_QUERY {
-		sybil.FLAGS.LOAD_AND_QUERY = &FALSE
+		sybil.FLAGS.LOAD_AND_QUERY = &falseFlag
 	}
 
 	if *sybil.FLAGS.READ_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = &TRUE
+		sybil.FLAGS.READ_INGESTION_LOG = &trueFlag
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -268,7 +268,7 @@ func runQueryCmdLine() {
 
 	if *sybil.FLAGS.PRINT_INFO {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LOAD_AND_QUERY = &FALSE
+		sybil.FLAGS.LOAD_AND_QUERY = &falseFlag
 
 		t.LoadRecords(nil)
 		t.PrintColInfo()
