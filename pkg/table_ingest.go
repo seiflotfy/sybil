@@ -10,8 +10,8 @@ import "strings"
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
 // to digest, make a new STOMACHE_DIR tempdir and move all files from ingest/ into it
 
-var READ_ROWS_ONLY = false
-var MIN_FILES_TO_DIGEST = 0
+var readRowsOnly = false
+var minFilesToDigest = 0
 
 func (t *Table) getNewIngestBlockName() (string, error) {
 	Debug("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
@@ -21,21 +21,21 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 
 func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 	Debug("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	table_cache_dir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
-	os.MkdirAll(table_cache_dir, 0755)
+	tableCacheDir := path.Join(*FLAGS.DIR, t.Name, cacheDir)
+	os.MkdirAll(tableCacheDir, 0755)
 
 	// this info block needs to be moved once its finished being written to
-	file, err := ioutil.TempFile(table_cache_dir, "info")
+	file, err := ioutil.TempFile(tableCacheDir, "info")
 	return file, err
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords(blockname string) {
+func (t *Table) ingestRecords(blockname string) {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
-	t.newRecords = make(RecordList, 0)
+	t.newRecords = make(recordList, 0)
 	t.SaveTableInfo("info")
 	t.ReleaseRecords()
 
@@ -45,10 +45,10 @@ func (t *Table) IngestRecords(blockname string) {
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
 func (t *Table) CompactRecords() {
-	FLAGS.READ_INGESTION_LOG = &TRUE
-	READ_ROWS_ONLY = true
-	DELETE_BLOCKS_AFTER_QUERY = false
-	HOLD_MATCHES = true
+	FLAGS.READ_INGESTION_LOG = &trueFlag
+	readRowsOnly = true
+	DeleteBlocksAfterQuery = false
+	holdMatches = true
 
 	t.ResetBlockCache()
 	t.DigestRecords()
@@ -65,14 +65,14 @@ func (t *Table) MaybeCompactRecords() {
 		return
 	}
 
-	if t.ShouldCompactRowStore(INGEST_DIR) {
+	if t.ShouldCompactRowStore(ingestDir) {
 		t.CompactRecords()
 	}
 }
 
-var NO_MORE_BLOCKS = GROUP_DELIMITER
+var NO_MORE_BLOCKS = groupDelimiter
 
-type AfterRowBlockLoad func(string, RecordList)
+type AfterRowBlockLoad func(string, recordList)
 
 var FILE_DIGEST_THRESHOLD = 256
 var KB = int64(1024)
@@ -88,11 +88,11 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	var file *os.File
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < lockTries; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
-			time.Sleep(LOCK_US)
+			time.Sleep(lockUs)
 			if i > MAX_ROW_STORE_TRIES {
 				return false
 			}
@@ -103,7 +103,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	files, err := file.Readdir(0)
-	MIN_FILES_TO_DIGEST = len(files)
+	minFilesToDigest = len(files)
 
 	if len(files) > FILE_DIGEST_THRESHOLD {
 		return true
@@ -137,11 +137,11 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	}
 
 	var file *os.File
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < lockTries; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
-			time.Sleep(LOCK_US)
+			time.Sleep(lockUs)
 			if i > MAX_ROW_STORE_TRIES {
 				return
 			}
@@ -153,7 +153,7 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	files, err := file.Readdir(0)
 	if t.RowBlock == nil {
 		t.RowBlock = &TableBlock{}
-		(*t.RowBlock).RecordList = make(RecordList, 0)
+		(*t.RowBlock).recordList = make(recordList, 0)
 		t.RowBlock.Info = &SavedColumnInfo{}
 		t.block_m.Lock()
 		t.BlockList[ROW_STORE_BLOCK] = t.RowBlock
@@ -185,7 +185,7 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 
 }
 
-func LoadRowBlockCB(digestname string, records RecordList) {
+func LoadRowBlockCB(digestname string, records recordList) {
 	if digestname == NO_MORE_BLOCKS {
 		return
 	}
@@ -194,13 +194,13 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 	block := t.RowBlock
 
 	if len(records) > 0 {
-		block.RecordList = append(block.RecordList, records...)
-		block.Info.NumRecords = int32(len(block.RecordList))
+		block.recordList = append(block.recordList, records...)
+		block.Info.NumRecords = int32(len(block.recordList))
 	}
 
 }
 
-var DELETE_BLOCKS = make([]string, 0)
+var deleteBlocks = make([]string, 0)
 
 func (t *Table) RestoreUningestedFiles() {
 	if t.GrabDigestLock() == false {
@@ -208,7 +208,7 @@ func (t *Table) RestoreUningestedFiles() {
 		return
 	}
 
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
 	os.MkdirAll(ingestdir, 0777)
 
 	digesting := path.Join(*FLAGS.DIR, t.Name)
@@ -224,7 +224,7 @@ func (t *Table) RestoreUningestedFiles() {
 				Debug("RESTORING UNINGESTED FILE", file.Name())
 				from := path.Join(fname, file.Name())
 				to := path.Join(ingestdir, file.Name())
-				err := RenameAndMod(from, to)
+				err := renameAndMod(from, to)
 				if err != nil {
 					Debug("COULDNT RESTORE UNINGESTED FILE", from, to, err)
 				}
@@ -244,7 +244,7 @@ type SaveBlockChunkCB struct {
 	digestdir string
 }
 
-func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
+func (cb *SaveBlockChunkCB) CB(digestname string, records recordList) {
 
 	t := GetTable(*FLAGS.TABLE)
 	if digestname == NO_MORE_BLOCKS {
@@ -253,7 +253,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 			t.ReleaseRecords()
 		}
 
-		for _, file := range DELETE_BLOCKS {
+		for _, file := range deleteBlocks {
 			Debug("REMOVING", file)
 			os.Remove(file)
 		}
@@ -274,7 +274,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 	if len(records) > 0 {
 		t.newRecords = append(t.newRecords, records...)
 	}
-	DELETE_BLOCKS = append(DELETE_BLOCKS, digestname)
+	deleteBlocks = append(deleteBlocks, digestname)
 
 }
 
@@ -291,7 +291,7 @@ func (t *Table) DigestRecords() {
 	}
 
 	dirname := path.Join(*FLAGS.DIR, t.Name)
-	digestfile := path.Join(dirname, INGEST_DIR)
+	digestfile := path.Join(dirname, ingestDir)
 	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going
@@ -306,15 +306,15 @@ func (t *Table) DigestRecords() {
 	file, _ := os.Open(digestfile)
 
 	files, err := file.Readdir(0)
-	if len(files) < MIN_FILES_TO_DIGEST {
-		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", MIN_FILES_TO_DIGEST)
+	if len(files) < minFilesToDigest {
+		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", minFilesToDigest)
 		t.ReleaseDigestLock()
 		return
 	}
 
 	if err == nil {
 		for _, f := range files {
-			RenameAndMod(path.Join(digestfile, f.Name()), path.Join(digesting, f.Name()))
+			renameAndMod(path.Join(digestfile, f.Name()), path.Join(digesting, f.Name()))
 		}
 		// We don't want to leave someone without a place to put their
 		// ingestions...

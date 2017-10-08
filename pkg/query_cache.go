@@ -42,7 +42,7 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 	tb.Info = info
 
-	blockQuery := CopyQuerySpec(querySpec)
+	blockQuery := copyQuerySpec(querySpec)
 	if blockQuery.LoadCachedResults(tb.Name) {
 		t.block_m.Lock()
 		t.BlockList[dirname] = &tb
@@ -157,9 +157,9 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 
 	cache_key := qs.GetCacheKey(blockname)
 
-	cache_dir := path.Join(blockname, "cache")
+	cacheDir := path.Join(blockname, "cache")
 	cache_name := fmt.Sprintf("%s.db", cache_key)
-	filename := path.Join(cache_dir, cache_name)
+	filename := path.Join(cacheDir, cache_name)
 
 	cachedSpec := QueryResults{}
 	err := decodeInto(filename, &cachedSpec)
@@ -192,16 +192,16 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 
 	cachedInfo := qs.QueryResults
 
-	cache_dir := path.Join(blockname, "cache")
-	err := os.MkdirAll(cache_dir, 0777)
+	cacheDir := path.Join(blockname, "cache")
+	err := os.MkdirAll(cacheDir, 0777)
 	if err != nil {
 		Debug("COULDNT CREATE CACHE DIR", err, "NOT CACHING QUERY")
 		return
 	}
 
 	cache_name := fmt.Sprintf("%s.db.gz", cache_key)
-	filename := path.Join(cache_dir, cache_name)
-	tempfile, err := ioutil.TempFile(cache_dir, cache_name)
+	filename := path.Join(cacheDir, cache_name)
+	tempfile, err := ioutil.TempFile(cacheDir, cache_name)
 	if err != nil {
 		Debug("TEMPFILE ERROR", err)
 	}
@@ -232,7 +232,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	}
 
 	tempfile.Close()
-	err = RenameAndMod(tempfile.Name(), filename)
+	err = renameAndMod(tempfile.Name(), filename)
 	if err != nil {
 		Warn("ERROR RENAMING", tempfile.Name())
 	}

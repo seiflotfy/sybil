@@ -13,7 +13,7 @@ type savedQueryResults struct {
 	TimeResults  map[int]ResultMap
 	MatchedCount int
 	Sorted       []*Result
-	Matched      RecordList
+	Matched      recordList
 }
 
 type savedQueryParams struct {
@@ -146,11 +146,11 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 
 	agg := Aggregation{Name: name, name_id: col_id, Op: op}
 	if op == "avg" {
-		agg.op_id = OP_AVG
+		agg.op_id = opAvg
 	}
 
 	if op == "hist" {
-		agg.op_id = OP_HIST
+		agg.op_id = opHist
 		agg.HistType = "basic"
 		if *FLAGS.LOG_HIST {
 			agg.HistType = "multi"
@@ -163,7 +163,7 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	}
 
 	if op == "distinct" {
-		agg.op_id = OP_DISTINCT
+		agg.op_id = opDistinct
 	}
 
 	_, ok := t.IntInfo[col_id]

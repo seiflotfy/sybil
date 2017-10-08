@@ -24,10 +24,10 @@ func setup_test_vars(chunk_size int) {
 	Startup()
 	FLAGS.TABLE = &TEST_TABLE_NAME
 
-	TEST_MODE = true
+	testMode = true
 	CHUNK_SIZE = chunk_size
-	LOCK_US = 1
-	LOCK_TRIES = 3
+	lockUs = 1
+	lockTries = 3
 }
 
 func add_records(cb RecordSetupCB, block_count int) []*Record {

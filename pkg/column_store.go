@@ -1,20 +1,20 @@
 package pkg
 
-// the BLOCK_VERSION is how we get hints about decoding blocks for backwards
+// the blockVersion is how we get hints about decoding blocks for backwards
 // compatibility. at least, it will be in the future
-var BLOCK_VERSION = int32(1)
+var blockVersion = int32(1)
 
 // Before we save the new record list in a table, we tend to sort by time
-type RecordList []*Record
-type SortRecordsByTime struct {
-	RecordList
+type recordList []*Record
+type sortRecordsByTime struct {
+	recordList
 }
 
-func (a RecordList) Len() int      { return len(a) }
-func (a RecordList) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a SortRecordsByTime) Less(i, j int) bool {
-	t1 := a.RecordList[i].Timestamp
-	t2 := a.RecordList[j].Timestamp
+func (a recordList) Len() int      { return len(a) }
+func (a recordList) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a sortRecordsByTime) Less(i, j int) bool {
+	t1 := a.recordList[i].Timestamp
+	t2 := a.recordList[j].Timestamp
 
 	return t1 < t2
 }
@@ -76,14 +76,14 @@ type SavedSetColumn struct {
 func NewSavedIntColumn() SavedIntColumn {
 	ret := SavedIntColumn{}
 
-	ret.VERSION = BLOCK_VERSION
+	ret.VERSION = blockVersion
 	return ret
 
 }
 func NewSavedStrColumn() SavedStrColumn {
 	ret := SavedStrColumn{}
 
-	ret.VERSION = BLOCK_VERSION
+	ret.VERSION = blockVersion
 	return ret
 
 }
@@ -91,7 +91,7 @@ func NewSavedStrColumn() SavedStrColumn {
 func NewSavedSetColumn() SavedSetColumn {
 	ret := SavedSetColumn{}
 
-	ret.VERSION = BLOCK_VERSION
+	ret.VERSION = blockVersion
 
 	return ret
 }

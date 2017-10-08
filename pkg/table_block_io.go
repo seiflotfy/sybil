@@ -11,20 +11,20 @@ import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(records recordList, filename string) bool {
 	if len(records) == 0 {
 		return true
 	}
 
 	temp_block := newTableBlock()
-	temp_block.RecordList = records
+	temp_block.recordList = records
 	temp_block.table = t
 
 	return temp_block.SaveToColumns(filename)
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
-	READ_ROWS_ONLY = false
+	readRowsOnly = false
 	t.LoadRecords(nil)
 
 	ret := make([]*TableBlock, 0)
@@ -80,7 +80,7 @@ func (t *Table) FillPartialBlock() bool {
 		return true
 	}
 
-	partialRecords := block.RecordList
+	partialRecords := block.recordList
 	Debug("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
 	if len(partialRecords) < CHUNK_SIZE {
@@ -99,7 +99,7 @@ func (t *Table) FillPartialBlock() bool {
 		if delta < len(t.newRecords) {
 			t.newRecords = t.newRecords[delta:]
 		} else {
-			t.newRecords = make(RecordList, 0)
+			t.newRecords = make(recordList, 0)
 		}
 	}
 
@@ -178,7 +178,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	}
 	iend := time.Now()
 
-	if DEBUG_TIMING {
+	if debugTiming {
 		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
@@ -265,15 +265,15 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 type AfterLoadQueryCB struct {
 	querySpec *QuerySpec
 	wg        *sync.WaitGroup
-	records   RecordList
+	records   recordList
 
 	count int
 }
 
-func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
+func (cb *AfterLoadQueryCB) CB(digestname string, records recordList) {
 	if digestname == NO_MORE_BLOCKS {
 		// TODO: add sessionization call over here, too
-		count := FilterAndAggRecords(cb.querySpec, &cb.records)
+		count := filterAndAggRecords(cb.querySpec, &cb.records)
 		cb.count += count
 
 		cb.wg.Done()
@@ -307,13 +307,13 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 }
 
 func (b *TableBlock) ExportBlockData() {
-	if len(b.RecordList) == 0 {
+	if len(b.recordList) == 0 {
 		return
 	}
 
 	tsv_data := make([]string, 0)
 
-	for _, r := range b.RecordList {
+	for _, r := range b.recordList {
 		sample := r.toTSVRow()
 		tsv_data = append(tsv_data, strings.Join(sample, "\t"))
 
@@ -325,7 +325,7 @@ func (b *TableBlock) ExportBlockData() {
 
 	os.MkdirAll(path.Join(dir_name, "export"), 0755)
 
-	tsv_header := strings.Join(b.RecordList[0].sampleHeader(), "\t")
+	tsv_header := strings.Join(b.recordList[0].sampleHeader(), "\t")
 	tsv_str := strings.Join(tsv_data, "\n")
 	Debug("SAVING TSV ", len(tsv_str), "RECORDS", len(tsv_data), fName)
 

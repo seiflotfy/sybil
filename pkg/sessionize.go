@@ -37,8 +37,10 @@ import "runtime/debug"
 // x common session patterns (pathing)
 // * number of actions per fixed time period
 
-var SINGLE_EVENT_DURATION = int64(30) // i think this means 30 seconds
-var BLOCKS_BEFORE_GC = 8
+var (
+	SINGLE_EVENT_DURATION = int64(30) // i think this means 30 seconds
+	BLOCKS_BEFORE_GC      = 8
+)
 
 type SessionSpec struct {
 	ExpireAfter int // Seconds to expire a session after not seeing any new events
@@ -86,7 +88,7 @@ func (sl *SessionList) ExpireRecords() int {
 		wg.Add(1)
 		bs := as
 		go func() {
-			sort.Sort(SortRecordsByTime{bs.Records})
+			sort.Sort(sortRecordsByTime{bs.Records})
 
 			sessions := bs.ExpireRecords(sl.Expiration)
 
@@ -111,7 +113,7 @@ func (sl *SessionList) ExpireRecords() int {
 }
 
 type ActiveSession struct {
-	Records RecordList
+	Records recordList
 	Stats   *SessionStats
 
 	Path       []string
@@ -126,7 +128,7 @@ type SessionStats struct {
 	NumSessions     BasicHist
 	SessionDuration BasicHist
 	Retention       BasicHist
-	Calendar        *Calendar
+	Calendar        *calendar
 
 	SessionDelta BasicHist
 
@@ -135,7 +137,7 @@ type SessionStats struct {
 
 func NewSessionStats() *SessionStats {
 	ss := SessionStats{}
-	ss.Calendar = NewCalendar()
+	ss.Calendar = newCalendar()
 	return &ss
 }
 
@@ -149,7 +151,7 @@ func (ss *SessionStats) CombineStats(stats *SessionStats) {
 	ss.Calendar.CombineCalendar(stats.Calendar)
 }
 
-func (ss *SessionStats) SummarizeSession(records RecordList) {
+func (ss *SessionStats) SummarizeSession(records recordList) {
 	if len(records) == 0 {
 		return
 	}
@@ -162,7 +164,7 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 	}
 
 	for _, r := range records {
-		ss.Calendar.AddActivity(int(r.Timestamp))
+		ss.Calendar.addActivity(int(r.Timestamp))
 	}
 
 	if len(records) == 1 {
@@ -207,11 +209,11 @@ func (as *ActiveSession) IsExpired() bool {
 	return false
 }
 
-func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
+func (as *ActiveSession) ExpireRecords(timestamp int) []recordList {
 	prev_time := 0
 
 	session_cutoff := *FLAGS.SESSION_CUTOFF * 60
-	sessions := make([]RecordList, 0)
+	sessions := make([]recordList, 0)
 	if len(as.Records) <= 0 {
 		as.Records = nil
 		return sessions
@@ -219,7 +221,7 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 
 	var path_key bytes.Buffer
 	var path_length = *FLAGS.PATH_LENGTH
-	current_session := make(RecordList, 0)
+	current_session := make(recordList, 0)
 
 	var avg_delta = 0.0
 	var num_delta = 0.0
@@ -233,7 +235,7 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 			for i := 1; i < path_length; i++ {
 				as.Path[i-1] = as.Path[i]
 				path_key.WriteString(as.Path[i])
-				path_key.WriteString(GROUP_DELIMITER)
+				path_key.WriteString(groupDelimiter)
 			}
 
 			as.Path[path_length-1] = path_val
@@ -252,7 +254,7 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 		if prev_time > 0 && time_val-prev_time > session_cutoff {
 			sessions = append(sessions, current_session)
 
-			current_session = make(RecordList, 0)
+			current_session = make(recordList, 0)
 			current_session = append(current_session, r.CopyRecord())
 
 			avg_delta = 0
@@ -293,7 +295,7 @@ func (sl *SessionList) AddRecord(group_key string, r *Record) {
 	session, ok := sl.List[group_key]
 	if !ok {
 		session = &ActiveSession{}
-		session.Records = make(RecordList, 0)
+		session.Records = make(recordList, 0)
 		session.Path = make([]string, *FLAGS.PATH_LENGTH)
 		session.PathStats = make(map[string]int)
 		session.Stats = NewSessionStats()
@@ -422,7 +424,7 @@ func (ss *SessionSpec) CombineSessions(sessionspec *SessionSpec) {
 	}
 }
 
-func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordsptr *RecordList) {
+func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordsptr *recordList) {
 	records := *recordsptr
 	for i := 0; i < len(records); i++ {
 		r := records[i]
@@ -442,10 +444,10 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 			continue
 		}
 
-		session_col := *FLAGS.SESSION_COL
+		SessionCol := *FLAGS.SessionCol
 		var group_key = bytes.NewBufferString("")
 
-		cols := strings.Split(session_col, *FLAGS.FIELD_SEPARATOR)
+		cols := strings.Split(SessionCol, *FLAGS.FIELD_SEPARATOR)
 		for _, col := range cols {
 			field_id := r.block.get_key_id(col)
 			switch r.Populated[field_id] {
@@ -461,7 +463,7 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 
 			}
 
-			group_key.WriteString(GROUP_DELIMITER)
+			group_key.WriteString(groupDelimiter)
 
 		}
 
@@ -477,8 +479,8 @@ type SortBlocksByTime []*TableBlock
 func (a SortBlocksByTime) Len() int      { return len(a) }
 func (a SortBlocksByTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortBlocksByTime) Less(i, j int) bool {
-	time_col := *FLAGS.TIME_COL
-	return a[i].Info.IntInfoMap[time_col].Min < a[j].Info.IntInfoMap[time_col].Min
+	TimeCol := *FLAGS.TimeCol
+	return a[i].Info.IntInfoMap[TimeCol].Min < a[j].Info.IntInfoMap[TimeCol].Min
 }
 
 type SortBlocksByEndTime []*TableBlock
@@ -486,8 +488,8 @@ type SortBlocksByEndTime []*TableBlock
 func (a SortBlocksByEndTime) Len() int      { return len(a) }
 func (a SortBlocksByEndTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortBlocksByEndTime) Less(i, j int) bool {
-	time_col := *FLAGS.TIME_COL
-	return a[i].Info.IntInfoMap[time_col].Max < a[j].Info.IntInfoMap[time_col].Max
+	TimeCol := *FLAGS.TimeCol
+	return a[i].Info.IntInfoMap[TimeCol].Max < a[j].Info.IntInfoMap[TimeCol].Max
 }
 
 func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *SessionSpec) int {
@@ -498,7 +500,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		for _, b := range t.BlockList {
 			block := t.LoadBlockFromDir(b.Name, nil, false)
 			if block != nil {
-				if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
+				if block.Info.IntInfoMap[*FLAGS.TimeCol] != nil {
 					block.table = t
 					blocks = append(blocks, block)
 
@@ -522,8 +524,8 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		joinLoadSpec := jt.NewLoadSpec()
 		joinLoadSpec.LoadAllColumns = true
 
-		DELETE_BLOCKS_AFTER_QUERY = false
-		FLAGS.READ_INGESTION_LOG = &TRUE
+		DeleteBlocksAfterQuery = false
+		FLAGS.READ_INGESTION_LOG = &trueFlag
 		jt.LoadRecords(&joinLoadSpec)
 		end := time.Now()
 
@@ -533,21 +535,21 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 
 	}
 
-	max_time := int64(0)
+	maxTime := int64(0)
 	count := 0
 
 	var wg sync.WaitGroup
 
-	result_lock := sync.Mutex{}
-	count_lock := sync.Mutex{}
+	resultLock := sync.Mutex{}
+	countLock := sync.Mutex{}
 
-	filterSpec := FilterSpec{Int: *FLAGS.INT_FILTERS, Str: *FLAGS.STR_FILTERS, Set: *FLAGS.SET_FILTERS}
+	filterSpec := FilterSpec{Int: *FLAGS.IntFilters, Str: *FLAGS.StrFilters, Set: *FLAGS.SetFilters}
 
 	for i, b := range blocks {
 
-		min_time := b.Info.IntInfoMap[*FLAGS.TIME_COL].Min
+		min_time := b.Info.IntInfoMap[*FLAGS.TimeCol].Min
 
-		max_time = b.Info.IntInfoMap[*FLAGS.TIME_COL].Max
+		maxTime = b.Info.IntInfoMap[*FLAGS.TimeCol].Max
 		this_block := b
 		block_index := i
 		wg.Add(1)
@@ -557,18 +559,18 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			if *FLAGS.DEBUG {
 				fmt.Fprint(os.Stderr, ".")
 			}
-			blockQuery := CopyQuerySpec(querySpec)
+			blockQuery := copyQuerySpec(querySpec)
 			blockSession := NewSessionSpec()
 			loadSpec := this_block.table.NewLoadSpec()
 			if *FLAGS.PATH_KEY != "" {
 				loadSpec.Str(*FLAGS.PATH_KEY)
 			}
 
-			cols := strings.Split(*FLAGS.SESSION_COL, *FLAGS.FIELD_SEPARATOR)
+			cols := strings.Split(*FLAGS.SessionCol, *FLAGS.FIELD_SEPARATOR)
 			for _, col := range cols {
 				loadSpec.Str(col)
 			}
-			loadSpec.Int(*FLAGS.TIME_COL)
+			loadSpec.Int(*FLAGS.TimeCol)
 
 			filters := BuildFilters(this_block.table, &loadSpec, filterSpec)
 			blockQuery.Filters = filters
@@ -576,19 +578,19 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			block := this_block.table.LoadBlockFromDir(this_block.Name, &loadSpec, false)
 			if block != nil {
 
-				SessionizeRecords(blockQuery, &blockSession, &block.RecordList)
-				count_lock.Lock()
-				count += len(block.RecordList)
-				count_lock.Unlock()
+				SessionizeRecords(blockQuery, &blockSession, &block.recordList)
+				countLock.Lock()
+				count += len(block.recordList)
+				countLock.Unlock()
 			}
 
-			result_lock.Lock()
+			resultLock.Lock()
 			masterSession.CombineSessions(&blockSession)
-			this_block.RecordList = nil
-			block.RecordList = nil
+			this_block.recordList = nil
+			block.recordList = nil
 			delete(block.table.BlockList, block.Name)
 
-			result_lock.Unlock()
+			resultLock.Unlock()
 
 			wg.Done()
 		}()
@@ -606,11 +608,11 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 
 			}()
 
-			result_lock.Lock()
+			resultLock.Lock()
 			masterSession.Sessions.NoMoreRecordsBefore(int(min_time))
 			masterSession.ExpireRecords()
 
-			result_lock.Unlock()
+			resultLock.Unlock()
 
 		}
 
@@ -620,7 +622,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 
 	fmt.Fprintf(os.Stderr, "+")
 	session_cutoff := *FLAGS.SESSION_CUTOFF * 60
-	masterSession.Sessions.NoMoreRecordsBefore(int(max_time) + 2*session_cutoff)
+	masterSession.Sessions.NoMoreRecordsBefore(int(maxTime) + 2*session_cutoff)
 	masterSession.ExpireRecords()
 	fmt.Fprintf(os.Stderr, "\n")
 	Debug("INSPECTED", count, "RECORDS")

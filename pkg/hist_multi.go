@@ -29,7 +29,7 @@ func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if FLAGS.Op != nil && *FLAGS.Op == "hist" {
 		h.TrackPercentiles()
 	}
 
@@ -46,7 +46,7 @@ func (h *MultiHist) Sum() int64 {
 }
 
 func (h *MultiHist) addWeightedValue(value int64, weight int64) {
-	// TODO: use more appropriate discard method for .Min to express an order of
+	// TODO: use more apprOpriate discard method for .Min to express an order of
 	// magnitude
 	if h.Info != nil {
 		if value > h.Info.Max*10 || value < h.Info.Min {

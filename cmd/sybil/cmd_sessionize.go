@@ -9,8 +9,8 @@ import "strings"
 
 func addSessionFlags() {
 	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	sybil.FLAGS.SessionCol = flag.String("session", "", "Column to use for sessionizing")
 	sybil.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
 	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
 	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
@@ -20,11 +20,11 @@ func addSessionFlags() {
 	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
 	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 
-	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
-	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	sybil.FLAGS.StrFilters = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
-	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	sybil.FLAGS.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
@@ -89,7 +89,7 @@ func runSessionizeCmdLine() {
 
 	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
 
-	if *sybil.FLAGS.SESSION_COL != "" {
+	if *sybil.FLAGS.SessionCol != "" {
 		sessionSpec := sybil.NewSessionSpec()
 		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
 	}

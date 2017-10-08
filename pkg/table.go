@@ -23,7 +23,7 @@ type Table struct {
 	NewBlockInfos  []string
 
 	// List of new records that haven't been saved to file yet
-	newRecords RecordList
+	newRecords recordList
 
 	key_string_id_lookup map[int16]string
 	val_string_id_lookup map[int32]string
@@ -76,7 +76,7 @@ func (t *Table) init_data_structures() {
 	t.IntInfo = make(IntInfoTable)
 
 	t.LastBlock = newTableBlock()
-	t.LastBlock.RecordList = t.newRecords
+	t.LastBlock.recordList = t.newRecords
 
 	t.string_id_m = &sync.RWMutex{}
 	t.record_m = &sync.Mutex{}
@@ -200,7 +200,7 @@ func (t *Table) MakeDir() {
 	os.MkdirAll(tabledir, 0755)
 }
 
-func (t *Table) PrintRecords(records RecordList) {
+func (t *Table) PrintRecords(records recordList) {
 	for i := 0; i < len(records); i++ {
 		t.PrintRecord(records[i])
 	}

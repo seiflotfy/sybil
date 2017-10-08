@@ -17,7 +17,7 @@ func runDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	sybil.DeleteBlocksAfterQuery = false
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {

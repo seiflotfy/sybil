@@ -1,6 +1,5 @@
 package pkg
 
-
 import "sync"
 
 type LoadSpec struct {
@@ -10,7 +9,7 @@ type LoadSpec struct {
 	LoadAllColumns bool
 	table          *Table
 
-	slabs  []*RecordList
+	slabs  []*recordList
 	slab_m *sync.Mutex
 }
 
@@ -19,7 +18,7 @@ func NewLoadSpec() LoadSpec {
 	l.files = make(map[string]bool)
 	l.columns = make(map[string]bool)
 
-	l.slabs = make([]*RecordList, 0)
+	l.slabs = make([]*recordList, 0)
 
 	l.slab_m = &sync.Mutex{}
 	return l

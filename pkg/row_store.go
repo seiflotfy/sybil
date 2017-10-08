@@ -36,7 +36,7 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	r.SetMap = SetMap{}
 
 	b := t.LastBlock
-	t.LastBlock.RecordList = append(t.LastBlock.RecordList, &r)
+	t.LastBlock.recordList = append(t.LastBlock.recordList, &r)
 
 	b.table = t
 	r.block = &b
@@ -100,7 +100,7 @@ func (r Record) toSavedRecord() *SavedRecord {
 }
 
 type SavedRecords struct {
-	RecordList []*SavedRecord
+	recordList []*SavedRecord
 }
 
 func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
@@ -117,7 +117,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalled_records
 }
 
-func (t *Table) LoadRecordsFromLog(filename string) RecordList {
+func (t *Table) LoadRecordsFromLog(filename string) recordList {
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -126,7 +126,7 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 		Debug("ERROR LOADING INGESTION LOG", err)
 	}
 
-	ret := make(RecordList, len(marshalled_records))
+	ret := make(recordList, len(marshalled_records))
 
 	for i, r := range marshalled_records {
 		ret[i] = r.toRecord(t)
@@ -135,14 +135,14 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 
 }
 
-func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
+func (t *Table) AppendRecordsToLog(records recordList, blockname string) {
 	if len(records) == 0 {
 		return
 	}
 
 	// TODO: fix this up, so that we don't
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
-	tempingestdir := path.Join(*FLAGS.DIR, t.Name, TEMP_INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
+	tempingestdir := path.Join(*FLAGS.DIR, t.Name, tempIngestDir)
 
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)
@@ -176,7 +176,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	for i := 0; i < 3; i++ {
 		fullname := path.Join(ingestdir, basename)
 		// need to keep re-trying, right?
-		err = RenameAndMod(w.Name(), fullname)
+		err = renameAndMod(w.Name(), fullname)
 		if err == nil {
 			// we are done writing, time to exit
 			return

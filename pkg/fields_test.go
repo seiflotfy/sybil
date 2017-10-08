@@ -28,7 +28,7 @@ func TestSets(test *testing.T) {
 	nt := save_and_reload_table(test, block_count)
 
 	for _, b := range nt.BlockList {
-		for _, r := range b.RecordList {
+		for _, r := range b.recordList {
 			ival, ok := r.GetIntVal("id_int")
 			if !ok {
 				test.Error("MISSING INT ID")

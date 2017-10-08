@@ -271,5 +271,5 @@ func runIngestCmdLine() {
 		import_csv_records()
 	}
 
-	t.IngestRecords(digestfile)
+	t.ingestRecords(digestfile)
 }

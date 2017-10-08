@@ -76,7 +76,7 @@ func (t *Table) NewBasicHist(info *IntInfo) *HistCompat {
 	compat_hist.table = t
 	compat_hist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if FLAGS.Op != nil && *FLAGS.Op == "hist" {
 		compat_hist.TrackPercentiles()
 	}
 

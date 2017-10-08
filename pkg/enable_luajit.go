@@ -72,7 +72,7 @@ end
 var SRC = ` `
 
 func initLua() {
-	ENABLE_LUA = true
+	enableLua = true
 }
 
 var LUA_BLOCK_ID = 0
@@ -113,7 +113,7 @@ func SetLuaScript(filename string) {
 		Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &TRUE
+	FLAGS.LUA = &trueFlag
 	HOLD_MATCHES = true
 	SRC = string(dat)
 }
@@ -230,7 +230,7 @@ func (qs *QuerySpec) luaInit() {
 
 }
 
-func (qs *QuerySpec) luaMap(rl *RecordList) LuaTable {
+func (qs *QuerySpec) luaMap(rl *recordList) LuaTable {
 	state := qs.LuaState
 	// Execute map function
 	C.lua_getfield(state, C.LUA_GLOBALSINDEX, C.CString("map"))

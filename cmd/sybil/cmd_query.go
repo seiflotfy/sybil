@@ -9,10 +9,10 @@ import "time"
 import "path"
 import "runtime/debug"
 
-var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
+var maxRecordsNoGc = 4 * 1000 * 1000 // 4 million
 
-var LIST_TABLES *bool
-var TIME_FORMAT *string
+var listTables *bool
+var TimeFormat *string
 var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
@@ -21,9 +21,9 @@ func addQueryFlags() {
 	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
-	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
+	sybil.FLAGS.Time = flag.Bool("time", false, "make a time rollup")
+	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	sybil.FLAGS.Time_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
 	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
 	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
@@ -34,13 +34,13 @@ func addQueryFlags() {
 
 	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
-	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
 	sybil.FLAGS.HIST_BUCKET = flag.Int("int-bucket", 0, "Int hist bucket size")
 
-	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	sybil.FLAGS.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	sybil.FLAGS.StrFilters = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
 	sybil.FLAGS.UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
@@ -54,13 +54,13 @@ func addQueryFlags() {
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
-	if sybil.ENABLE_LUA {
+	if sybil.enableLua {
 		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
 	}
 
-	LIST_TABLES = flag.Bool("tables", false, "List tables")
+	listTables = flag.Bool("tables", false, "List tables")
 
-	TIME_FORMAT = flag.String("time-format", "", "time format to use")
+	TimeFormat = flag.String("time-format", "", "time format to use")
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
 	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
@@ -71,13 +71,13 @@ func runQueryCmdLine() {
 	addQueryFlags()
 	flag.Parse()
 
-	if *LIST_TABLES {
+	if *listTables {
 		sybil.PrintTables()
 		return
 	}
 
-	if *TIME_FORMAT != "" {
-		sybil.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
+	if *TimeFormat != "" {
+		sybil.OPTS.TimeFormat = sybil.GetTimeFormat(*TimeFormat)
 	}
 
 	table := *sybil.FLAGS.TABLE
@@ -165,7 +165,7 @@ func runQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
+	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.IntFilters, Str: *sybil.FLAGS.StrFilters, Set: *sybil.FLAGS.SetFilters}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
@@ -200,14 +200,14 @@ func runQueryCmdLine() {
 		querySpec.OrderBy = ""
 	}
 
-	if *sybil.FLAGS.TIME {
+	if *sybil.FLAGS.Time {
 		// TODO: infer the TimeBucket size
-		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
+		querySpec.TimeBucket = *sybil.FLAGS.Time_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(*sybil.FLAGS.TIME_COL)
-		time_col_id, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
+		loadSpec.Int(*sybil.FLAGS.TimeCol)
+		TimeColID, ok := t.KeyTable[*sybil.FLAGS.TimeCol]
 		if ok {
-			sybil.OPTS.TIME_COL_ID = time_col_id
+			sybil.OPTS.TimeColID = TimeColID
 		}
 	}
 
@@ -221,7 +221,7 @@ func runQueryCmdLine() {
 
 	if *sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
-		sybil.DELETE_BLOCKS_AFTER_QUERY = false
+		sybil.DeleteBlocksAfterQuery = false
 
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true

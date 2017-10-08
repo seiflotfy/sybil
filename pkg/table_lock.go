@@ -8,9 +8,11 @@ import "strconv"
 import "io/ioutil"
 import "time"
 
-var LOCK_US = time.Millisecond * 3
-var LOCK_TRIES = 50
-var MAX_LOCK_BREAKS = 5
+var (
+	lockUs        = time.Millisecond * 3
+	lockTries     = 50
+	maxLockBreaks = 5
+)
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {
@@ -64,7 +66,7 @@ func (l *InfoLock) Recover() bool {
 	if t.LoadTableInfoFrom(backup) {
 		Debug("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
 		os.Remove(infodb)
-		RenameAndMod(backup, infodb)
+		renameAndMod(backup, infodb)
 		l.ForceDeleteFile()
 		return l.Grab()
 	}
@@ -78,7 +80,7 @@ func (l *InfoLock) Recover() bool {
 func (l *DigestLock) Recover() bool {
 	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
@@ -97,7 +99,7 @@ func (l *BlockLock) Recover() bool {
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
-		RenameAndMod(l.Name, fmt.Sprint(l.Name, ".broke"))
+		renameAndMod(l.Name, fmt.Sprint(l.Name, ".broke"))
 		l.ForceDeleteFile()
 	} else {
 		Debug("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
@@ -111,7 +113,7 @@ func (l *BlockLock) Recover() bool {
 func (l *CacheLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, cacheDir))
 
 	if err != nil {
 		l.ForceDeleteFile()
@@ -119,7 +121,7 @@ func (l *CacheLock) Recover() bool {
 	}
 
 	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
+		filename := path.Join(*FLAGS.DIR, t.Name, cacheDir, block_file.Name())
 		block_cache := SavedBlockCache{}
 
 		err := decodeInto(filename, &block_cache)
@@ -214,7 +216,7 @@ func check_if_broken(lockfile string, l *Lock) bool {
 			BREAK_MAP[lockfile] = breaks
 
 			Debug("CANT READ PID FROM LOCK:", lockfile, string(val), err, breaks)
-			if breaks > MAX_LOCK_BREAKS {
+			if breaks > maxLockBreaks {
 				l.broken = true
 				Debug("PUTTING LOCK INTO RECOVERY", lockfile)
 			}
@@ -264,7 +266,7 @@ func check_pid(lockfile string, l *Lock) bool {
 		return true
 	}
 
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < lockTries; i++ {
 		val, err = ioutil.ReadFile(lockfile)
 
 		if err == nil {
@@ -273,7 +275,7 @@ func check_pid(lockfile string, l *Lock) bool {
 				return true
 			}
 
-			time.Sleep(LOCK_US)
+			time.Sleep(lockUs)
 			continue
 		} else {
 			cangrab = true
@@ -293,8 +295,8 @@ func (l *Lock) Grab() bool {
 	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	var err error
-	for i := 0; i < LOCK_TRIES; i++ {
-		time.Sleep(LOCK_US)
+	for i := 0; i < lockTries; i++ {
+		time.Sleep(lockUs)
 		if check_pid(lockfile, l) == false {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
@@ -338,7 +340,7 @@ func (l *Lock) Release() bool {
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
 	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < lockTries; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 
 		if err != nil {
@@ -412,7 +414,7 @@ func (t *Table) ReleaseBlockLock(name string) bool {
 }
 
 func (t *Table) GrabCacheLock() bool {
-	lock := Lock{Table: t, Name: CACHE_DIR}
+	lock := Lock{Table: t, Name: cacheDir}
 	info := &CacheLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
@@ -422,7 +424,7 @@ func (t *Table) GrabCacheLock() bool {
 }
 
 func (t *Table) ReleaseCacheLock() bool {
-	lock := Lock{Table: t, Name: CACHE_DIR}
+	lock := Lock{Table: t, Name: cacheDir}
 	info := &CacheLock{lock}
 	ret := info.Release()
 	return ret

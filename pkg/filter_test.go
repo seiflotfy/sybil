@@ -23,7 +23,7 @@ func TestFilters(test *testing.T) {
 
 	save_and_reload_table(test, block_count)
 
-	DELETE_BLOCKS_AFTER_QUERY = false
+	DeleteBlocksAfterQuery = false
 
 	testIntEq(test)
 	testIntNeq(test)
@@ -49,7 +49,7 @@ func testIntLt(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -57,7 +57,7 @@ func testIntLt(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) > 20 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -75,7 +75,7 @@ func testIntGt(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -83,7 +83,7 @@ func testIntGt(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) < 20 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -104,7 +104,7 @@ func testIntNeq(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	// Test Filtering to !20 returns only 19 results (because we have rand(20) above)
 	if len(querySpec.Results) != 19 {
@@ -116,7 +116,7 @@ func testIntNeq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		Debug("TEST INT NEQ", k, v.Hists["age"].Mean())
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
@@ -135,7 +135,7 @@ func testIntEq(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -143,7 +143,7 @@ func testIntEq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -166,7 +166,7 @@ func testStrEq(test *testing.T) {
 
 	Debug("QUERY SPEC", querySpec.Results)
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 	Debug("QUERY SPEC RESULTS", querySpec.Results)
 
 	if len(querySpec.Results) <= 0 {
@@ -174,7 +174,7 @@ func testStrEq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -195,14 +195,14 @@ func testStrNeq(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) <= 0 {
 		test.Error("Str Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -224,7 +224,7 @@ func testStrRe(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 10 {
 		test.Error("Str Filter for re returned no results", len(querySpec.Results), querySpec.Results)
@@ -234,7 +234,7 @@ func testStrRe(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -255,7 +255,7 @@ func testSetIn(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 1 {
 		test.Error("Set Filter for in returned more (or less) than one results", len(querySpec.Results), querySpec.Results)
@@ -266,7 +266,7 @@ func testSetIn(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, groupDelimiter, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -297,7 +297,7 @@ func testSetNin(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.matchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 19 {
 		test.Error("Set Filter for in returned more (or less) than 19 results", len(querySpec.Results), querySpec.Results)

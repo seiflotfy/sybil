@@ -1,6 +1,5 @@
 package pkg
 
-
 import "strconv"
 
 func (t *Table) BuildJoinMap() {
@@ -13,7 +12,7 @@ func (t *Table) BuildJoinMap() {
 
 	Debug("BLOCKS", len(t.BlockList))
 	for _, b := range t.BlockList {
-		for _, r := range b.RecordList {
+		for _, r := range b.recordList {
 			switch r.Populated[joinid] {
 			case INT_VAL:
 				val := strconv.FormatInt(int64(r.Ints[joinid]), 10)
@@ -27,8 +26,8 @@ func (t *Table) BuildJoinMap() {
 		}
 	}
 
-	Debug("ROWS", len(t.RowBlock.RecordList))
-	for _, r := range t.RowBlock.RecordList {
+	Debug("ROWS", len(t.RowBlock.recordList))
+	for _, r := range t.RowBlock.recordList {
 		switch r.Populated[joinid] {
 		case INT_VAL:
 			val := strconv.FormatInt(int64(r.Ints[joinid]), 10)

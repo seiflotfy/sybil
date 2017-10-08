@@ -130,7 +130,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.recordList), ")")
 
 		w, _ := os.Create(col_fname)
 
@@ -211,7 +211,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.recordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -297,7 +297,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.recordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -309,7 +309,7 @@ type SavedIntInfo map[string]*IntInfo
 type SavedStrInfo map[string]*StrInfo
 
 func (tb *TableBlock) SaveInfoToColumns(dirname string) {
-	records := tb.RecordList
+	records := tb.recordList
 
 	// Now to save block info...
 	col_fname := fmt.Sprintf("%s/info.db", dirname)
@@ -352,7 +352,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 		length = 1
 	}
 
-	if DEBUG_TIMING {
+	if debugTiming {
 		Debug("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
 	}
 
@@ -367,7 +367,7 @@ type SeparatedColumns struct {
 }
 
 func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
-	records := tb.RecordList
+	records := tb.recordList
 
 	// making a cross section of records that share values
 	// goes from fieldname{} -> value{} -> record
@@ -460,13 +460,13 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	end = time.Now()
 
 	// TODO:
-	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
+	if nb == nil || nb.Info.NumRecords != int32(len(tb.recordList)) {
 		Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
 		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
-		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
+		if nb == nil || len(nb.recordList) != len(tb.recordList) {
 			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 		}
 	}
@@ -474,11 +474,11 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	Debug("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
 
 	os.RemoveAll(oldblock)
-	err := RenameAndMod(dirname, oldblock)
+	err := renameAndMod(dirname, oldblock)
 	if err != nil {
 		Error("ERROR RENAMING BLOCK", dirname, oldblock, err)
 	}
-	err = RenameAndMod(partialname, dirname)
+	err = renameAndMod(partialname, dirname)
 	if err != nil {
 		Error("ERROR RENAMING PARTIAL", partialname, dirname, err)
 	}
@@ -495,7 +495,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 }
 
 func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
-	records := tb.RecordList[:]
+	records := tb.recordList[:]
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
@@ -517,17 +517,17 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	// unpack the string table
 
 	// Run our replacements!
-	str_replace, ok := OPTS.STR_REPLACEMENTS[into.Name]
+	StrReplace, ok := OPTS.StrReplaceMENTS[into.Name]
 	bucket_replace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
-		re, err = regexp.Compile(str_replace.pattern)
+		re, err = regexp.Compile(StrReplace.pattern)
 	}
 
 	for k, v := range into.StringTable {
 		var nv = v
 		if re != nil {
-			nv = re.ReplaceAllString(v, str_replace.replace)
+			nv = re.ReplaceAllString(v, StrReplace.replace)
 		}
 
 		existing_key, exists := col.StringTable[nv]
@@ -605,7 +605,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 }
 
 func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
-	records := tb.RecordList
+	records := tb.recordList
 
 	saved_col := NewSavedSetColumn()
 	into := &saved_col
@@ -662,7 +662,7 @@ func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
 }
 
 func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
-	records := tb.RecordList[:]
+	records := tb.recordList[:]
 
 	into := &SavedIntColumn{}
 	err := dec.Decode(into)
@@ -672,9 +672,9 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 
 	col_id := tb.table.get_key_id(into.Name)
 
-	is_time_col := false
-	if FLAGS.TIME_COL != nil {
-		is_time_col = into.Name == *FLAGS.TIME_COL
+	is_TimeCol := false
+	if FLAGS.TimeCol != nil {
+		is_TimeCol = into.Name == *FLAGS.TimeCol
 	}
 
 	if into.BucketEncoded {
@@ -701,7 +701,7 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 				records[r].Populated[col_id] = INT_VAL
 				prev = r
 
-				if is_time_col {
+				if is_TimeCol {
 					records[r].Timestamp = bucket.Value
 				}
 
@@ -724,7 +724,7 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 			records[r].Ints[col_id] = IntField(v)
 			records[r].Populated[col_id] = INT_VAL
 
-			if is_time_col {
+			if is_TimeCol {
 				records[r].Timestamp = v
 			}
 

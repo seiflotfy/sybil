@@ -41,7 +41,7 @@ func TestTableCreate(test *testing.T) {
 
 	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {
-		records = append(records, b.RecordList...)
+		records = append(records, b.recordList...)
 	}
 
 	if len(records) != len(created) {

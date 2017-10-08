@@ -2,31 +2,32 @@ package pkg
 
 import "flag"
 
-var FALSE = false
-var TRUE = true
-
-var TEST_MODE = false
-var ENABLE_LUA = false
+var (
+	falseFlag = false
+	trueFlag  = true
+	testMode  = false
+	enableLua = false
+)
 
 type FlagDefs struct {
-	OP          *string
-	PRINT       *bool
-	EXPORT      *bool
-	INT_FILTERS *string
-	STR_FILTERS *string
-	STR_REPLACE *string // regex replacement for strings
-	SET_FILTERS *string
+	Op         *string
+	PRINT      *bool
+	EXPORT     *bool
+	IntFilters *string
+	StrFilters *string
+	StrReplace *string // regex replacement for strings
+	SetFilters *string
 
-	SESSION_COL *string
-	INTS        *string
-	STRS        *string
-	GROUPS      *string
+	SessionCol *string
+	Ints       *string
+	Strs       *string
+	Groups     *string
 
-	ADD_RECORDS *int
+	AddRecords *int
 
-	TIME        *bool
-	TIME_COL    *string
-	TIME_BUCKET *int
+	Time        *bool
+	TimeCol     *string
+	Time_BUCKET *int
 	HIST_BUCKET *int
 	HDR_HIST    *bool
 	LOG_HIST    *bool
@@ -89,15 +90,15 @@ type StrReplace struct {
 type OptionDefs struct {
 	SORT_COUNT              string
 	SAMPLES                 bool
-	STR_REPLACEMENTS        map[string]StrReplace
+	StrReplaceMENTS         map[string]StrReplace
 	WEIGHT_COL              bool
 	WEIGHT_COL_ID           int16
 	DELTA_ENCODE_INT_VALUES bool
 	DELTA_ENCODE_RECORD_IDS bool
 	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
+	TimeSERIES              bool
+	TimeColID               int16
+	TimeFormat              string
 	GROUP_BY                []string
 }
 
@@ -115,22 +116,22 @@ func setDefaults() {
 	OPTS.DELTA_ENCODE_INT_VALUES = true
 	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIMESERIES = false
-	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
+	OPTS.TimeSERIES = false
+	OPTS.TimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-	FLAGS.GC = &TRUE
-	FLAGS.JSON = &FALSE
-	FLAGS.PRINT = &TRUE
-	FLAGS.EXPORT = &FALSE
+	FLAGS.GC = &trueFlag
+	FLAGS.JSON = &falseFlag
+	FLAGS.PRINT = &trueFlag
+	FLAGS.EXPORT = &falseFlag
 
-	FLAGS.SKIP_COMPACT = &FALSE
+	FLAGS.SKIP_COMPACT = &falseFlag
 
-	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
-	FLAGS.LOAD_AND_QUERY = &TRUE
-	FLAGS.LOAD_THEN_QUERY = &FALSE
-	FLAGS.READ_INGESTION_LOG = &FALSE
-	FLAGS.READ_ROWSTORE = &FALSE
-	FLAGS.ANOVA_ICC = &FALSE
+	FLAGS.PRINT_KEYS = &OPTS.TimeSERIES
+	FLAGS.LOAD_AND_QUERY = &trueFlag
+	FLAGS.LOAD_THEN_QUERY = &falseFlag
+	FLAGS.READ_INGESTION_LOG = &falseFlag
+	FLAGS.READ_ROWSTORE = &falseFlag
+	FLAGS.ANOVA_ICC = &falseFlag
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 
@@ -138,23 +139,23 @@ func setDefaults() {
 	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
 	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UPDATE_TABLE_INFO = &FALSE
-	FLAGS.SKIP_OUTLIERS = &TRUE
-	FLAGS.SAMPLES = &FALSE
-	FLAGS.LUA = &FALSE
+	FLAGS.UPDATE_TABLE_INFO = &falseFlag
+	FLAGS.SKIP_OUTLIERS = &trueFlag
+	FLAGS.SAMPLES = &falseFlag
+	FLAGS.LUA = &falseFlag
 	FLAGS.LUAFILE = &EMPTY
 
-	FLAGS.RECYCLE_MEM = &TRUE
-	FLAGS.CACHED_QUERIES = &FALSE
+	FLAGS.RECYCLE_MEM = &trueFlag
+	FLAGS.CACHED_QUERIES = &falseFlag
 
-	FLAGS.HDR_HIST = &FALSE
-	FLAGS.LOG_HIST = &FALSE
+	FLAGS.HDR_HIST = &falseFlag
+	FLAGS.LOG_HIST = &falseFlag
 
 	DEFAULT_LIMIT := 100
 	FLAGS.LIMIT = &DEFAULT_LIMIT
 
-	FLAGS.PROFILE = &FALSE
-	FLAGS.PROFILE_MEM = &FALSE
+	FLAGS.PROFILE = &falseFlag
+	FLAGS.PROFILE_MEM = &falseFlag
 	if PROFILER_ENABLED {
 		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")

@@ -5,10 +5,10 @@ import "sync"
 // Table Block should have a bunch of metadata next to it, too
 type TableBlock struct {
 	Name       string
-	RecordList RecordList
+	recordList recordList
 	Info       *SavedColumnInfo
 	Size       int64
-	Matched    RecordList
+	Matched    recordList
 
 	IntInfo IntInfoTable
 	StrInfo StrInfoTable

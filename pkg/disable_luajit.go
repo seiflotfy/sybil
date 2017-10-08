@@ -3,7 +3,7 @@
 package pkg
 
 func initLua() {
-	ENABLE_LUA = false
+	enableLua = false
 }
 
 type LuaKey interface{}
@@ -13,7 +13,7 @@ func SetLuaScript(filename string) {}
 
 func (qs *QuerySpec) luaInit() {}
 
-func (qs *QuerySpec) luaMap(rl *RecordList) {}
+func (qs *QuerySpec) luaMap(rl *recordList) {}
 
 func (qs *QuerySpec) luaCombine(other *QuerySpec) {}
 
