@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 var VERSION_STRING = "0.2.0"
 

@@ -1,6 +1,6 @@
 //+build luajit
 
-package sybil
+package lib
 
 /*
 #cgo LDFLAGS: -lluajit-5.1 -ldl -lm

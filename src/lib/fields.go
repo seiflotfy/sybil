@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 type IntArr []IntField
 type StrArr []StrField

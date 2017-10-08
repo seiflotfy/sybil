@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 import "bytes"
 import "fmt"

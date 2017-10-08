@@ -1,5 +1,4 @@
-package sybil
-
+package lib
 
 import "time"
 

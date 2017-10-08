@@ -1,6 +1,4 @@
-package sybil
-
-
+package lib
 
 type Record struct {
 	Strs      []StrField

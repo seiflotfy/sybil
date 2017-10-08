@@ -1,6 +1,6 @@
 //+build !hdrhist
 
-package sybil
+package lib
 
 var ENABLE_HDR = false
 

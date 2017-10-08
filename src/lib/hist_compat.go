@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 // {{{ HIST COMPAT WRAPPER FOR BASIC HIST
 

@@ -1,6 +1,6 @@
 //+build !luajit
 
-package sybil
+package lib
 
 func initLua() {
 	ENABLE_LUA = false

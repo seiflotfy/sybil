@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false

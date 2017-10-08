@@ -1,6 +1,6 @@
 //+build hdrhist
 
-package sybil
+package lib
 
 import "strconv"
 import "github.com/codahale/hdrhistogram"

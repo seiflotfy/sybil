@@ -1,6 +1,6 @@
 //+build profile
 
-package sybil
+package lib
 
 import "github.com/pkg/profile"
 

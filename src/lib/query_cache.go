@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 import "encoding/gob"
 import "crypto/md5"

@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 import "sync"
 import "os"

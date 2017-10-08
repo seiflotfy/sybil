@@ -1,6 +1,6 @@
 // +build !profile
 
-package sybil
+package lib
 
 var PROFILER_ENABLED bool
 var PROFILE *bool = &PROFILER_ENABLED

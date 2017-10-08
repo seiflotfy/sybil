@@ -1,4 +1,4 @@
-package sybil
+package lib
 
 // the BLOCK_VERSION is how we get hints about decoding blocks for backwards
 // compatibility. at least, it will be in the future
