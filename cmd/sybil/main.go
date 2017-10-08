@@ -11,15 +11,15 @@ var CMD_FUNCS = make(map[string]func())
 var CMD_KEYS = make([]string, 0)
 
 func setupCommands() {
-	CMD_FUNCS["ingest"] = RunIngestCmdLine
-	CMD_FUNCS["digest"] = RunDigestCmdLine
-	CMD_FUNCS["session"] = RunSessionizeCmdLine
-	CMD_FUNCS["trim"] = RunTrimCmdLine
-	CMD_FUNCS["query"] = RunQueryCmdLine
-	CMD_FUNCS["index"] = RunIndexCmdLine
-	CMD_FUNCS["rebuild"] = RunRebuildCmdLine
-	CMD_FUNCS["inspect"] = RunInspectCmdLine
-	CMD_FUNCS["version"] = RunVersionCmdLine
+	CMD_FUNCS["ingest"] = runIngestCmdLine
+	CMD_FUNCS["digest"] = runDigestCmdLine
+	CMD_FUNCS["session"] = runSessionizeCmdLine
+	CMD_FUNCS["trim"] = runTrimCmdLine
+	CMD_FUNCS["query"] = runQueryCmdLine
+	CMD_FUNCS["index"] = runIndexCmdLine
+	CMD_FUNCS["rebuild"] = runRebuildCmdLine
+	CMD_FUNCS["inspect"] = runInspectCmdLine
+	CMD_FUNCS["version"] = runVersionCmdLine
 
 	for k, _ := range CMD_FUNCS {
 		CMD_KEYS = append(CMD_KEYS, k)

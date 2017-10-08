@@ -67,7 +67,7 @@ func addQueryFlags() {
 
 }
 
-func RunQueryCmdLine() {
+func runQueryCmdLine() {
 	addQueryFlags()
 	flag.Parse()
 

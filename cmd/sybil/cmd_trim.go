@@ -28,7 +28,7 @@ func askConfirmation() bool {
 
 }
 
-func RunTrimCmdLine() {
+func runTrimCmdLine() {
 	MB_LIMIT := flag.Int("mb", 0, "max table size in MB")
 	DELETE_BEFORE := flag.Int("before", 0, "delete blocks with data older than TIMESTAMP")
 	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")

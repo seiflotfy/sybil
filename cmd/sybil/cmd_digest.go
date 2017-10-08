@@ -4,7 +4,7 @@ import "flag"
 
 import sybil "github.com/logv/sybil/pkg"
 
-func RunDigestCmdLine() {
+func runDigestCmdLine() {
 	flag.Parse()
 
 	if *sybil.FLAGS.TABLE == "" {

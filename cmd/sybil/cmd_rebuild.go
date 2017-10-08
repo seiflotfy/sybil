@@ -4,7 +4,7 @@ import "flag"
 
 import sybil "github.com/logv/sybil/pkg"
 
-func RunRebuildCmdLine() {
+func runRebuildCmdLine() {
 	REPLACE_INFO := flag.Bool("replace", false, "Replace broken info.db if it exists")
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")
 	flag.Parse()

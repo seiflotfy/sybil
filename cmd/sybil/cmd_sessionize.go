@@ -28,7 +28,7 @@ func addSessionFlags() {
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
-func RunSessionizeCmdLine() {
+func runSessionizeCmdLine() {
 	addSessionFlags()
 	flag.Parse()
 	start := time.Now()

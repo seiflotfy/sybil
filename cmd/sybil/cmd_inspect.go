@@ -80,7 +80,7 @@ func decodeStrCol(digest_file *string) bool {
 }
 
 // TODO: make a list of potential types that can be decoded into
-func RunInspectCmdLine() {
+func runInspectCmdLine() {
 	digest_file := flag.String("file", "", "Name of file to inspect")
 	flag.Parse()
 
@@ -88,11 +88,9 @@ func RunInspectCmdLine() {
 		sybil.Print("Please specify a file to inspect with the -file flag")
 		return
 	}
-
 	if decodeTableInfo(digest_file) {
 		return
 	}
-
 	if decodeInfoCol(digest_file) {
 		return
 	}

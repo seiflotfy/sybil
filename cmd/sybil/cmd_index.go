@@ -4,7 +4,7 @@ import sybil "github.com/logv/sybil/pkg"
 import "flag"
 import "strings"
 
-func RunIndexCmdLine() {
+func runIndexCmdLine() {
 	var f_INTS = flag.String("int", "", "Integer values to index")
 	flag.Parse()
 	if *sybil.FLAGS.TABLE == "" {

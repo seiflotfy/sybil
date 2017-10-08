@@ -196,7 +196,7 @@ func import_json_records() {
 var INT_CAST = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
 
-func RunIngestCmdLine() {
+func runIngestCmdLine() {
 	ingestfile := flag.String("file", sybil.INGEST_DIR, "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
