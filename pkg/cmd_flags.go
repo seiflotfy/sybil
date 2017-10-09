@@ -3,13 +3,24 @@ package pkg
 import "flag"
 
 var (
-	falseFlag = false
+	// FalseFlag ...
+	FalseFlag = false
 	trueFlag  = true
 	testMode  = false
-	enableLua = false
+	// EnableLua ...
+	EnableLua = false
+	empty     = ""
+
+	// TODO: merge these two into one thing
+	// current problem is that Flags needs pointers
+
+	// Flags ...
+	Flags = flagDefs{}
+	// Opts ...
+	Opts = optionDefs{}
 )
 
-type FlagDefs struct {
+type flagDefs struct {
 	Op         *string
 	PRINT      *bool
 	EXPORT     *bool
@@ -25,140 +36,135 @@ type FlagDefs struct {
 
 	AddRecords *int
 
-	Time        *bool
-	TimeCol     *string
-	Time_BUCKET *int
-	HIST_BUCKET *int
-	HDR_HIST    *bool
-	LOG_HIST    *bool
+	Time       *bool
+	TimeCol    *string
+	TimeBucket *int
+	HistBucket *int
+	HdrHist    *bool
+	LogHist    *bool
 
-	FIELD_SEPARATOR    *string
-	FILTER_SEPARATOR   *string
-	PRINT_KEYS         *bool
-	LOAD_AND_QUERY     *bool
-	LOAD_THEN_QUERY    *bool
-	READ_INGESTION_LOG *bool
-	READ_ROWSTORE      *bool
-	SKIP_COMPACT       *bool
+	FieldSeparator   *string
+	FilterSeparator  *string
+	PrintKeys        *bool
+	LoadAndQuery     *bool
+	LoadThenQuery    *bool
+	ReadIngestionLog *bool
+	ReadRowStore     *bool
+	SkipCompact      *bool
 
-	PROFILE     *bool
-	PROFILE_MEM *bool
+	Profile    *bool
+	ProfileMem *bool
 
-	RECYCLE_MEM    *bool
-	CACHED_QUERIES *bool
+	RecycleMem    *bool
+	CachedQueries *bool
 
-	WEIGHT_COL *string
+	WeightCol *string
 
-	LIMIT *int
+	Limit *int
 
-	DEBUG *bool
+	Debug *bool
 	JSON  *bool
 	GC    *bool
 
-	DIR        *string
-	SORT       *string
-	TABLE      *string
-	PRINT_INFO *bool
-	SAMPLES    *bool
+	Dir       *string
+	Sort      *string
+	Table     *string
+	PrintInfo *bool
+	Samples   *bool
 
 	LUA     *bool
 	LUAFILE *string
 
-	UPDATE_TABLE_INFO *bool
-	SKIP_OUTLIERS     *bool
+	UpdateTableInfo *bool
+	skipOutliers    *bool
 
 	// Join keys
-	JOIN_TABLE *string
-	JOIN_KEY   *string
-	JOIN_GROUP *string
+	JoinTable *string
+	JoinKey   *string
+	JoinGroup *string
 
 	// Sessionization stuff
-	SESSION_CUTOFF *int
-	RETENTION      *bool
-	PATH_KEY       *string
-	PATH_LENGTH    *int
+	SessionCutOff *int
+	Retention     *bool
+	PathKey       *string
+	PathLength    *int
 
 	// STATS
-	ANOVA_ICC *bool
+	ANOVA *bool
 }
 
+// StrReplace ...
 type StrReplace struct {
 	pattern string
 	replace string
 }
 
-type OptionDefs struct {
-	SORT_COUNT              string
-	SAMPLES                 bool
-	StrReplaceMENTS         map[string]StrReplace
-	WEIGHT_COL              bool
-	WEIGHT_COL_ID           int16
-	DELTA_ENCODE_INT_VALUES bool
-	DELTA_ENCODE_RECORD_IDS bool
-	WRITE_BLOCK_INFO        bool
-	TimeSERIES              bool
-	TimeColID               int16
-	TimeFormat              string
-	GROUP_BY                []string
+type optionDefs struct {
+	SortCount            string
+	SAMPLES              bool
+	StrReplaceMENTS      map[string]StrReplace
+	WeightCol            bool
+	WeightColID          int16
+	deltaEncodeIntValues bool
+	deltaEncodeRecordIDs bool
+	WriteBlockInfo       bool
+	TimeSeries           bool
+	TimeColID            int16
+	TimeFormat           string
+	GroupBy              []string
 }
 
-// TODO: merge these two into one thing
-// current problem is that FLAGS needs pointers
-var FLAGS = FlagDefs{}
-var OPTS = OptionDefs{}
-var EMPTY = ""
-
 func setDefaults() {
-	OPTS.SORT_COUNT = "$COUNT"
-	OPTS.SAMPLES = false
-	OPTS.WEIGHT_COL = false
-	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.DELTA_ENCODE_INT_VALUES = true
-	OPTS.DELTA_ENCODE_RECORD_IDS = true
-	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TimeSERIES = false
-	OPTS.TimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
+	Opts.SortCount = "$COUNT"
+	Opts.SAMPLES = false
+	Opts.WeightCol = false
+	Opts.WeightColID = int16(0)
+	Opts.deltaEncodeIntValues = true
+	Opts.deltaEncodeRecordIDs = true
+	Opts.WriteBlockInfo = false
+	Opts.TimeSeries = false
+	Opts.TimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-	FLAGS.GC = &trueFlag
-	FLAGS.JSON = &falseFlag
-	FLAGS.PRINT = &trueFlag
-	FLAGS.EXPORT = &falseFlag
+	Flags.GC = &trueFlag
+	Flags.JSON = &FalseFlag
+	Flags.PRINT = &trueFlag
+	Flags.EXPORT = &FalseFlag
 
-	FLAGS.SKIP_COMPACT = &falseFlag
+	Flags.SkipCompact = &FalseFlag
 
-	FLAGS.PRINT_KEYS = &OPTS.TimeSERIES
-	FLAGS.LOAD_AND_QUERY = &trueFlag
-	FLAGS.LOAD_THEN_QUERY = &falseFlag
-	FLAGS.READ_INGESTION_LOG = &falseFlag
-	FLAGS.READ_ROWSTORE = &falseFlag
-	FLAGS.ANOVA_ICC = &falseFlag
-	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
-	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+	Flags.PrintKeys = &Opts.TimeSeries
+	Flags.LoadAndQuery = &trueFlag
+	Flags.LoadThenQuery = &FalseFlag
+	Flags.ReadIngestionLog = &FalseFlag
+	Flags.ReadRowStore = &FalseFlag
+	Flags.ANOVA = &FalseFlag
+	Flags.Dir = flag.String("dir", "./db/", "Directory to store DB files")
+	Flags.Table = flag.String("table", "", "Table to operate on [REQUIRED]")
 
-	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
-	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
-	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
+	Flags.Debug = flag.Bool("debug", false, "enable debug logging")
+	Flags.FieldSeparator = flag.String("field-separator", ",", "Field separator used in command line params")
+	Flags.FilterSeparator = flag.String("filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UPDATE_TABLE_INFO = &falseFlag
-	FLAGS.SKIP_OUTLIERS = &trueFlag
-	FLAGS.SAMPLES = &falseFlag
-	FLAGS.LUA = &falseFlag
-	FLAGS.LUAFILE = &EMPTY
+	Flags.UpdateTableInfo = &FalseFlag
+	Flags.skipOutliers = &trueFlag
+	Flags.Samples = &FalseFlag
+	Flags.LUA = &FalseFlag
+	Flags.LUAFILE = &empty
 
-	FLAGS.RECYCLE_MEM = &trueFlag
-	FLAGS.CACHED_QUERIES = &falseFlag
+	Flags.RecycleMem = &trueFlag
+	Flags.CachedQueries = &FalseFlag
 
-	FLAGS.HDR_HIST = &falseFlag
-	FLAGS.LOG_HIST = &falseFlag
+	Flags.HdrHist = &FalseFlag
+	Flags.LogHist = &FalseFlag
 
-	DEFAULT_LIMIT := 100
-	FLAGS.LIMIT = &DEFAULT_LIMIT
+	defaultLimit := 100
+	Flags.Limit = &defaultLimit
 
-	FLAGS.PROFILE = &falseFlag
-	FLAGS.PROFILE_MEM = &falseFlag
+	Flags.Profile = &FalseFlag
+	Flags.ProfileMem = &FalseFlag
 	if PROFILER_ENABLED {
-		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
-		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+		Flags.Profile = flag.Bool("profile", false, "turn profiling on?")
+		Flags.ProfileMem = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
 	initLua()

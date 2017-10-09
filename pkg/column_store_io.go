@@ -9,12 +9,12 @@ import "runtime/debug"
 import "time"
 import "regexp"
 
-type ValueMap map[int64][]uint32
+type valueMap map[int64][]uint32
 
-var CARDINALITY_THRESHOLD = 4
-var DEBUG_RECORD_CONSISTENCY = false
+var cardinalityThreshold = 4
+var debugRecordConsistency = false
 
-func delta_encode_col(col ValueMap) {
+func deltaEncodeCol(col valueMap) {
 	for _, records := range col {
 		prev := uint32(0)
 		for i, v := range records {
@@ -25,21 +25,21 @@ func delta_encode_col(col ValueMap) {
 	}
 }
 
-func delta_encode(same_map map[int16]ValueMap) {
-	for _, col := range same_map {
-		if len(col) <= CHUNK_SIZE/CARDINALITY_THRESHOLD {
-			delta_encode_col(col)
+func deltaEncode(sameMap map[int16]valueMap) {
+	for _, col := range sameMap {
+		if len(col) <= CHUNK_SIZE/cardinalityThreshold {
+			deltaEncodeCol(col)
 		}
 	}
 }
 
 // this is used to record the buckets when building the column
 // blobs
-func record_value(same_map map[int16]ValueMap, index int32, name int16, value int64) {
-	s, ok := same_map[name]
+func recordValue(sameMap map[int16]valueMap, index int32, name int16, value int64) {
+	s, ok := sameMap[name]
 	if !ok {
-		same_map[name] = ValueMap{}
-		s = same_map[name]
+		sameMap[name] = valueMap{}
+		s = sameMap[name]
 	}
 
 	vi := value
@@ -57,7 +57,7 @@ func (tb *TableBlock) GetColumnInfo(name_id int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]valueMap) {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
@@ -71,7 +71,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol := NewSavedIntColumn()
 
 		intCol.Name = col_name
-		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = Opts.deltaEncodeRecordIDs
 
 		max_r := 0
 		record_to_value := make(map[uint32]int64)
@@ -92,11 +92,11 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 		intCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(intCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(intCol.Bins) > CHUNK_SIZE/cardinalityThreshold {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, max_r)
-			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = Opts.deltaEncodeIntValues
 
 			for r, val := range record_to_value {
 				intCol.Values[r] = val
@@ -104,7 +104,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 			prev := int64(0)
 			for r, val := range intCol.Values {
-				if OPTS.DELTA_ENCODE_INT_VALUES {
+				if Opts.deltaEncodeIntValues {
 					intCol.Values[r] = val - prev
 					prev = val
 				} else {
@@ -139,7 +139,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 }
 
-func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]ValueMap) {
+func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]valueMap) {
 	for k, v := range same_sets {
 		col_name := tb.get_string_for_key(k)
 		if col_name == "" {
@@ -150,7 +150,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = col_name
-		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = Opts.deltaEncodeRecordIDs
 		temp_block := newTableBlock()
 
 		tb_col := tb.GetColumnInfo(k)
@@ -185,7 +185,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 
 		// the column is high cardinality?
 		setCol.BucketEncoded = true
-		if len(setCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(setCol.Bins) > CHUNK_SIZE/cardinalityThreshold {
 			setCol.BucketEncoded = false
 			setCol.Bins = nil
 			setCol.Values = make([][]int32, max_r)
@@ -219,7 +219,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 	}
 }
 
-func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]ValueMap) {
+func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]valueMap) {
 	for k, v := range same_strs {
 		col_name := tb.get_string_for_key(k)
 		if col_name == "" {
@@ -230,7 +230,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		}
 		strCol := NewSavedStrColumn()
 		strCol.Name = col_name
-		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = Opts.deltaEncodeRecordIDs
 		temp_block := newTableBlock()
 
 		temp_col := temp_block.GetColumnInfo(k)
@@ -257,7 +257,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		strCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(strCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(strCol.Bins) > CHUNK_SIZE/cardinalityThreshold {
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
 			strCol.Values = make([]int32, max_r)
@@ -268,7 +268,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		for _, bucket := range strCol.Bins {
 			first_val := bucket.Records[0]
-			if first_val > 1000 && DEBUG_RECORD_CONSISTENCY {
+			if first_val > 1000 && debugRecordConsistency {
 				Warn(k, bucket.Value, "FIRST RECORD IS", first_val)
 			}
 		}
@@ -361,9 +361,9 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 }
 
 type SeparatedColumns struct {
-	ints map[int16]ValueMap
-	strs map[int16]ValueMap
-	sets map[int16]ValueMap
+	ints map[int16]valueMap
+	strs map[int16]valueMap
+	sets map[int16]valueMap
 }
 
 func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
@@ -371,16 +371,16 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 	// making a cross section of records that share values
 	// goes from fieldname{} -> value{} -> record
-	same_ints := make(map[int16]ValueMap)
-	same_strs := make(map[int16]ValueMap)
-	same_sets := make(map[int16]ValueMap)
+	same_ints := make(map[int16]valueMap)
+	same_strs := make(map[int16]valueMap)
+	same_sets := make(map[int16]valueMap)
 
 	// parse record list and transfer book keeping data into the current
 	// table block, as well as separate record values by column type
 	for i, r := range records {
 		for k, v := range r.Ints {
 			if r.Populated[k] == INT_VAL {
-				record_value(same_ints, int32(i), int16(k), int64(v))
+				recordValue(same_ints, int32(i), int16(k), int64(v))
 			}
 		}
 		for k, v := range r.Strs {
@@ -393,7 +393,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
-				record_value(same_strs, int32(i), int16(k), int64(v_id))
+				recordValue(same_strs, int32(i), int16(k), int64(v_id))
 			}
 		}
 		for k, v := range r.SetMap {
@@ -403,16 +403,16 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 				for _, iv := range v {
 					v_name := col.get_string_for_val(int32(iv))
 					v_id := new_col.get_val_id(v_name)
-					record_value(same_sets, int32(i), int16(k), int64(v_id))
+					recordValue(same_sets, int32(i), int16(k), int64(v_id))
 				}
 			}
 		}
 	}
 
-	if OPTS.DELTA_ENCODE_RECORD_IDS {
-		delta_encode(same_ints)
-		delta_encode(same_strs)
-		delta_encode(same_sets)
+	if Opts.deltaEncodeRecordIDs {
+		deltaEncode(same_ints)
+		deltaEncode(same_strs)
+		deltaEncode(same_sets)
 	}
 
 	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets}
@@ -464,7 +464,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 		Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
 	}
 
-	if DEBUG_RECORD_CONSISTENCY {
+	if debugRecordConsistency {
 		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
 		if nb == nil || len(nb.recordList) != len(tb.recordList) {
 			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
@@ -494,7 +494,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec *fileDecoder, info SavedColumnInfo) {
 	records := tb.recordList[:]
 
 	into := &SavedStrColumn{}
@@ -517,7 +517,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	// unpack the string table
 
 	// Run our replacements!
-	StrReplace, ok := OPTS.StrReplaceMENTS[into.Name]
+	StrReplace, ok := Opts.StrReplaceMENTS[into.Name]
 	bucket_replace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
@@ -546,9 +546,9 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 
 	col.val_string_id_lookup = string_lookup
 
-	is_path_col := false
-	if FLAGS.PATH_KEY != nil {
-		is_path_col = into.Name == *FLAGS.PATH_KEY
+	isPathCol := false
+	if Flags.PathKey != nil {
+		isPathCol = into.Name == *Flags.PathKey
 	}
 	var record *Record
 	var r uint32
@@ -575,7 +575,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 				prev = r
 				record = records[r]
 
-				if DEBUG_RECORD_CONSISTENCY {
+				if debugRecordConsistency {
 					if record.Populated[col_id] != _NO_VAL {
 						Error("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
 					}
@@ -584,7 +584,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 				records[r].Populated[col_id] = STR_VAL
 				records[r].Strs[col_id] = cast_value
 
-				if is_path_col {
+				if isPathCol {
 					record.Path = string_lookup[new_value]
 				}
 			}
@@ -604,7 +604,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec *fileDecoder, info SavedColumnInfo) {
 	records := tb.recordList
 
 	saved_col := NewSavedSetColumn()
@@ -661,7 +661,7 @@ func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec *fileDecoder, info SavedColumnInfo) {
 	records := tb.recordList[:]
 
 	into := &SavedIntColumn{}
@@ -673,13 +673,13 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 	col_id := tb.table.get_key_id(into.Name)
 
 	is_TimeCol := false
-	if FLAGS.TimeCol != nil {
-		is_TimeCol = into.Name == *FLAGS.TimeCol
+	if Flags.TimeCol != nil {
+		is_TimeCol = into.Name == *Flags.TimeCol
 	}
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *FLAGS.UPDATE_TABLE_INFO {
+			if *Flags.UpdateTableInfo {
 				tb.update_int_info(col_id, bucket.Value)
 				tb.table.update_int_info(col_id, bucket.Value)
 			}
@@ -691,7 +691,7 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				if DEBUG_RECORD_CONSISTENCY {
+				if debugRecordConsistency {
 					if records[r].Populated[col_id] != _NO_VAL {
 						Error("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
 					}
@@ -712,7 +712,7 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 
 		prev := int64(0)
 		for r, v := range into.Values {
-			if *FLAGS.UPDATE_TABLE_INFO {
+			if *Flags.UpdateTableInfo {
 				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
 			}

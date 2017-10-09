@@ -72,7 +72,7 @@ end
 var SRC = ` `
 
 func initLua() {
-	enableLua = true
+	EnableLua = true
 }
 
 var LUA_BLOCK_ID = 0
@@ -113,8 +113,8 @@ func SetLuaScript(filename string) {
 		Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &trueFlag
-	HOLD_MATCHES = true
+	Flags.LUA = &trueFlag
+	HoldMatches = true
 	SRC = string(dat)
 }
 

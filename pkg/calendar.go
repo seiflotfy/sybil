@@ -52,7 +52,7 @@ func copyCalendar(am1, am2 activityMap) {
 }
 
 func (c *calendar) addActivity(timestamp int) {
-	if *FLAGS.RETENTION != false {
+	if *Flags.Retention != false {
 		punchCalendar(&c.Daily, timestamp/(int(time.Hour.Seconds())*24))
 		punchCalendar(&c.Weekly, timestamp/(int(time.Hour.Seconds())*24*7))
 		punchCalendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))

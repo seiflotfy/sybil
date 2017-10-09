@@ -16,12 +16,12 @@ func TestTableDigestRowRecords(test *testing.T) {
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	t.ingestRecords("ingest")
+	t.IngestRecords("ingest")
 
 	unload_test_table()
 	nt := GetTable(TEST_TABLE_NAME)
 	DeleteBlocksAfterQuery = false
-	FLAGS.READ_INGESTION_LOG = &trueFlag
+	Flags.ReadIngestionLog = &trueFlag
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)

@@ -29,7 +29,7 @@ func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if FLAGS.Op != nil && *FLAGS.Op == "hist" {
+	if Flags.Op != nil && *Flags.Op == "hist" {
 		h.TrackPercentiles()
 	}
 
@@ -57,7 +57,7 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		}
 	}
 
-	if OPTS.WEIGHT_COL && weight > 1 {
+	if Opts.WeightCol && weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {

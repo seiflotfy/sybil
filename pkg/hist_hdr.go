@@ -26,8 +26,8 @@ func (th *HDRHist) NewHist() Histogram {
 }
 
 func (t *Table) NewHDRHist(info *IntInfo) *HDRHist {
-	hdr_hist := hdrhistogram.New(info.Min, info.Max*2, 5)
-	outer_hist := HDRHist{hdr_hist, t, info, true}
+	HdrHist := hdrhistogram.New(info.Min, info.Max*2, 5)
+	outer_hist := HDRHist{HdrHist, t, info, true}
 
 	return &outer_hist
 

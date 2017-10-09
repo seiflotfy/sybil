@@ -3,7 +3,7 @@
 package pkg
 
 var PROFILER_ENABLED bool
-var PROFILE *bool = &PROFILER_ENABLED
+var Profile *bool = &PROFILER_ENABLED
 
 type NoProfile struct{}
 

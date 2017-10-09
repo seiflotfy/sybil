@@ -7,24 +7,24 @@ import "strings"
 func runIndexCmdLine() {
 	var fInts = flag.String("int", "", "Integer values to index")
 	flag.Parse()
-	if *sybil.FLAGS.TABLE == "" {
+	if *sybil.Flags.Table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	var ints []string
 	if *fInts != "" {
-		ints = strings.Split(*fInts, *sybil.FLAGS.FIELD_SEPARATOR)
+		ints = strings.Split(*fInts, *sybil.Flags.FieldSeparator)
 	}
 
-	sybil.FLAGS.UPDATE_TABLE_INFO = &trueFlag
+	sybil.Flags.UpdateTableInfo = &trueFlag
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*sybil.Flags.Table)
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")
 	sybil.DeleteBlocksAfterQuery = true
-	sybil.OPTS.WRITE_BLOCK_INFO = true
+	sybil.Opts.WriteBlockInfo = true
 
 	loadSpec := t.NewLoadSpec()
 	for _, v := range ints {

@@ -7,7 +7,7 @@ import "strings"
 import "encoding/gob"
 import "compress/gzip"
 
-type FileDecoder struct {
+type fileDecoder struct {
 	*gob.Decoder
 	File *os.File
 }
@@ -20,27 +20,27 @@ func decodeInto(filename string, obj interface{}) error {
 	return err
 }
 
-func getCompressedDecoder(filename string) FileDecoder {
+func getCompressedDecoder(filename string) fileDecoder {
 
 	var dec *gob.Decoder
 
 	file, err := os.Open(filename)
 	if err != nil {
 		Debug("COULDNT OPEN GZ", filename)
-		return FileDecoder{gob.NewDecoder(file), file}
+		return fileDecoder{gob.NewDecoder(file), file}
 	}
 
 	reader, err := gzip.NewReader(file)
 	if err != nil {
 		Debug("COULDNT DECOMPRESS GZ", filename)
-		return FileDecoder{gob.NewDecoder(reader), file}
+		return fileDecoder{gob.NewDecoder(reader), file}
 	}
 
 	dec = gob.NewDecoder(reader)
-	return FileDecoder{dec, file}
+	return fileDecoder{dec, file}
 }
 
-func GetFileDecoder(filename string) *FileDecoder {
+func GetFileDecoder(filename string) *fileDecoder {
 	// if the file ends with GZ ext, we use compressed decoder
 	if strings.HasSuffix(filename, GZIP_EXT) {
 		dec := getCompressedDecoder(filename)
@@ -61,7 +61,7 @@ func GetFileDecoder(filename string) *FileDecoder {
 	}
 
 	// otherwise, we just return vanilla decoder for this file
-	dec := FileDecoder{gob.NewDecoder(file), file}
+	dec := fileDecoder{gob.NewDecoder(file), file}
 	return &dec
 
 }

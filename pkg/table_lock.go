@@ -53,7 +53,7 @@ func RecoverLock(lock RecoverableLock) bool {
 func (l *InfoLock) Recover() bool {
 	t := l.Lock.Table
 	Debug("INFO LOCK RECOVERY")
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(*Flags.Dir, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
@@ -80,7 +80,7 @@ func (l *InfoLock) Recover() bool {
 func (l *DigestLock) Recover() bool {
 	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
+	ingestdir := path.Join(*Flags.Dir, t.Name, IngestDir)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
@@ -113,7 +113,7 @@ func (l *BlockLock) Recover() bool {
 func (l *CacheLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, cacheDir))
+	files, err := ioutil.ReadDir(path.Join(*Flags.Dir, t.Name, cacheDir))
 
 	if err != nil {
 		l.ForceDeleteFile()
@@ -121,7 +121,7 @@ func (l *CacheLock) Recover() bool {
 	}
 
 	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, cacheDir, block_file.Name())
+		filename := path.Join(*Flags.Dir, t.Name, cacheDir, block_file.Name())
 		block_cache := SavedBlockCache{}
 
 		err := decodeInto(filename, &block_cache)
@@ -155,7 +155,7 @@ func (l *Lock) ForceDeleteFile() {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*Flags.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
@@ -167,7 +167,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*Flags.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
@@ -292,7 +292,7 @@ func (l *Lock) Grab() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*Flags.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	var err error
 	for i := 0; i < lockTries; i++ {
@@ -339,7 +339,7 @@ func (l *Lock) Release() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*Flags.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 	for i := 0; i < lockTries; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 

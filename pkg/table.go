@@ -196,7 +196,7 @@ func (t *Table) PrintRecord(r *Record) {
 }
 
 func (t *Table) MakeDir() {
-	tabledir := path.Join(*FLAGS.DIR, t.Name)
+	tabledir := path.Join(*Flags.Dir, t.Name)
 	os.MkdirAll(tabledir, 0755)
 }
 

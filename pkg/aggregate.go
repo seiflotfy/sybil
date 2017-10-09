@@ -32,14 +32,14 @@ func (a sortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a sortResultsByCol) Less(i, j int) bool {
-	if a.Col == OPTS.SORT_COUNT {
+	if a.Col == Opts.SortCount {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
 		return t1 > t2
 	}
 
-	if *FLAGS.Op == "hist" {
+	if *Flags.Op == "hist" {
 		t1 := a.Results[i].Hists[a.Col].Mean()
 		t2 := a.Results[j].Hists[a.Col].Mean()
 		return t1 > t2
@@ -62,7 +62,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *recordList) int {
 	var weight = int64(1)
 
 	matchedRecords := 0
-	if holdMatches {
+	if HoldMatches {
 		querySpec.Matched = make(recordList, 0)
 	}
 
@@ -78,8 +78,8 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *recordList) int {
 		add := true
 		r := records[i]
 
-		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
-			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
+		if Opts.WeightCol && r.Populated[Opts.WeightColID] == INT_VAL {
+			weight = int64(r.Ints[Opts.WeightColID])
 		}
 
 		// FILTERING
@@ -97,11 +97,11 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *recordList) int {
 		}
 
 		matchedRecords++
-		if holdMatches {
+		if HoldMatches {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
-		if *FLAGS.LUA {
+		if *Flags.LUA {
 			continue
 		}
 
@@ -127,14 +127,14 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *recordList) int {
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			if len(r.Populated) <= int(OPTS.TimeColID) {
+			if len(r.Populated) <= int(Opts.TimeColID) {
 				continue
 			}
 
-			if r.Populated[OPTS.TimeColID] != INT_VAL {
+			if r.Populated[Opts.TimeColID] != INT_VAL {
 				continue
 			}
-			val := int64(r.Ints[OPTS.TimeColID])
+			val := int64(r.Ints[Opts.TimeColID])
 
 			bigRecord, bOk := querySpec.Results[string(binarybuffer)]
 			if !bOk {
@@ -213,7 +213,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *recordList) int {
 		querySpec.Results = *translateGroupBy(querySpec.Results, querySpec.Groups, columns)
 	}
 
-	if *FLAGS.LUA {
+	if *Flags.LUA {
 		querySpec.luaInit()
 		querySpec.luaMap(&querySpec.Matched)
 	}
@@ -296,7 +296,7 @@ func combineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	resultSpec.Table = querySpec.Table
 	resultSpec.LuaResult = make(LuaTable, 0)
 
-	if *FLAGS.LUA {
+	if *Flags.LUA {
 		resultSpec.luaInit()
 	}
 
@@ -314,7 +314,7 @@ func combineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	for _, spec := range blockSpecs {
 		masterResult.Combine(&spec.Results)
 
-		if *FLAGS.LUA {
+		if *Flags.LUA {
 			resultSpec.luaCombine(spec)
 		}
 
@@ -345,7 +345,7 @@ func combineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	resultSpec.TimeResults = masterTimeResult
 	resultSpec.Results = masterResult
 
-	if *FLAGS.LUA {
+	if *Flags.LUA {
 		resultSpec.luaFinalize()
 	}
 
@@ -374,8 +374,8 @@ func sortResults(querySpec *QuerySpec) {
 			Debug("SORTING TOOK", end.Sub(start))
 		}
 
-		if len(sorter.Results) > *FLAGS.LIMIT {
-			sorter.Results = sorter.Results[:*FLAGS.LIMIT]
+		if len(sorter.Results) > *Flags.Limit {
+			sorter.Results = sorter.Results[:*Flags.Limit]
 		}
 
 		querySpec.Sorted = sorter.Results
@@ -395,16 +395,16 @@ func searchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 	specLock := sync.Mutex{}
 	for _, block := range blockList {
 		wg.Add(1)
-		this_block := block
+		thisBlock := block
 		go func() {
 			defer wg.Done()
 
 			blockQuery := copyQuerySpec(querySpec)
 
-			filterAndAggRecords(blockQuery, &this_block.recordList)
+			filterAndAggRecords(blockQuery, &thisBlock.recordList)
 
 			specLock.Lock()
-			blockSpecs[this_block.Name] = blockQuery
+			blockSpecs[thisBlock.Name] = blockQuery
 			specLock.Unlock()
 
 		}()
@@ -415,7 +415,7 @@ func searchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 	return blockSpecs
 }
 
-func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
+func (t *Table) matchAndAggregate(querySpec *QuerySpec) {
 	start := time.Now()
 
 	querySpec.Table = t
@@ -433,7 +433,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	// Aggregating Matched Records
 	matched := combineMatches(blockSpecs)
-	if holdMatches {
+	if HoldMatches {
 		querySpec.Matched = matched
 	}
 

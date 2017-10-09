@@ -212,7 +212,7 @@ func (as *ActiveSession) IsExpired() bool {
 func (as *ActiveSession) ExpireRecords(timestamp int) []recordList {
 	prev_time := 0
 
-	session_cutoff := *FLAGS.SESSION_CUTOFF * 60
+	session_cutoff := *Flags.SessionCutOff * 60
 	sessions := make([]recordList, 0)
 	if len(as.Records) <= 0 {
 		as.Records = nil
@@ -220,7 +220,7 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []recordList {
 	}
 
 	var path_key bytes.Buffer
-	var path_length = *FLAGS.PATH_LENGTH
+	var path_length = *Flags.PathLength
 	current_session := make(recordList, 0)
 
 	var avg_delta = 0.0
@@ -296,7 +296,7 @@ func (sl *SessionList) AddRecord(group_key string, r *Record) {
 	if !ok {
 		session = &ActiveSession{}
 		session.Records = make(recordList, 0)
-		session.Path = make([]string, *FLAGS.PATH_LENGTH)
+		session.Path = make([]string, *Flags.PathLength)
 		session.PathStats = make(map[string]int)
 		session.Stats = NewSessionStats()
 		sl.List[group_key] = session
@@ -328,7 +328,7 @@ func (ss *SessionSpec) Finalize() {
 	sl := ss.Sessions
 
 	if sl.JoinTable != nil {
-		groups = strings.Split(*FLAGS.JOIN_GROUP, *FLAGS.FIELD_SEPARATOR)
+		groups = strings.Split(*Flags.JoinGroup, *Flags.FieldSeparator)
 	}
 
 	for join_key, as := range sl.List {
@@ -352,7 +352,7 @@ func (ss *SessionSpec) Finalize() {
 			}
 		}
 
-		if DEBUG_RECORD_CONSISTENCY {
+		if debugRecordConsistency {
 			if group_key == "" {
 				Debug("COULDNT FIND JOIN RECORD FOR", join_key)
 			}
@@ -395,8 +395,8 @@ func (ss *SessionSpec) PrintResults() {
 		Debug("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
 	}
 
-	if *FLAGS.PATH_KEY != "" {
-		if *FLAGS.JSON {
+	if *Flags.PathKey != "" {
+		if *Flags.JSON {
 			ret := make(map[string]interface{})
 			ret["uniques"] = ss.Sessions.PathUniques
 			ret["counts"] = ss.Sessions.PathCounts
@@ -444,10 +444,10 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 			continue
 		}
 
-		SessionCol := *FLAGS.SessionCol
+		SessionCol := *Flags.SessionCol
 		var group_key = bytes.NewBufferString("")
 
-		cols := strings.Split(SessionCol, *FLAGS.FIELD_SEPARATOR)
+		cols := strings.Split(SessionCol, *Flags.FieldSeparator)
 		for _, col := range cols {
 			field_id := r.block.get_key_id(col)
 			switch r.Populated[field_id] {
@@ -479,7 +479,7 @@ type SortBlocksByTime []*TableBlock
 func (a SortBlocksByTime) Len() int      { return len(a) }
 func (a SortBlocksByTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortBlocksByTime) Less(i, j int) bool {
-	TimeCol := *FLAGS.TimeCol
+	TimeCol := *Flags.TimeCol
 	return a[i].Info.IntInfoMap[TimeCol].Min < a[j].Info.IntInfoMap[TimeCol].Min
 }
 
@@ -488,7 +488,7 @@ type SortBlocksByEndTime []*TableBlock
 func (a SortBlocksByEndTime) Len() int      { return len(a) }
 func (a SortBlocksByEndTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortBlocksByEndTime) Less(i, j int) bool {
-	TimeCol := *FLAGS.TimeCol
+	TimeCol := *Flags.TimeCol
 	return a[i].Info.IntInfoMap[TimeCol].Max < a[j].Info.IntInfoMap[TimeCol].Max
 }
 
@@ -500,7 +500,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		for _, b := range t.BlockList {
 			block := t.LoadBlockFromDir(b.Name, nil, false)
 			if block != nil {
-				if block.Info.IntInfoMap[*FLAGS.TimeCol] != nil {
+				if block.Info.IntInfoMap[*Flags.TimeCol] != nil {
 					block.table = t
 					blocks = append(blocks, block)
 
@@ -515,17 +515,17 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 
 	masterSession := NewSessionSpec()
 	// Setup the join table for the session spec
-	if *FLAGS.JOIN_TABLE != "" {
+	if *Flags.JoinTable != "" {
 		start := time.Now()
-		Debug("LOADING JOIN TABLE", *FLAGS.JOIN_TABLE)
-		jt := GetTable(*FLAGS.JOIN_TABLE)
+		Debug("LOADING JOIN TABLE", *Flags.JoinTable)
+		jt := GetTable(*Flags.JoinTable)
 		masterSession.Sessions.JoinTable = jt
 
 		joinLoadSpec := jt.NewLoadSpec()
 		joinLoadSpec.LoadAllColumns = true
 
 		DeleteBlocksAfterQuery = false
-		FLAGS.READ_INGESTION_LOG = &trueFlag
+		Flags.ReadIngestionLog = &trueFlag
 		jt.LoadRecords(&joinLoadSpec)
 		end := time.Now()
 
@@ -543,34 +543,34 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 	resultLock := sync.Mutex{}
 	countLock := sync.Mutex{}
 
-	filterSpec := FilterSpec{Int: *FLAGS.IntFilters, Str: *FLAGS.StrFilters, Set: *FLAGS.SetFilters}
+	filterSpec := FilterSpec{Int: *Flags.IntFilters, Str: *Flags.StrFilters, Set: *Flags.SetFilters}
 
 	for i, b := range blocks {
 
-		min_time := b.Info.IntInfoMap[*FLAGS.TimeCol].Min
+		min_time := b.Info.IntInfoMap[*Flags.TimeCol].Min
 
-		maxTime = b.Info.IntInfoMap[*FLAGS.TimeCol].Max
+		maxTime = b.Info.IntInfoMap[*Flags.TimeCol].Max
 		this_block := b
 		block_index := i
 		wg.Add(1)
 		go func() {
 
 			//			Debug("LOADING BLOCK", this_block.Name, min_time)
-			if *FLAGS.DEBUG {
+			if *Flags.Debug {
 				fmt.Fprint(os.Stderr, ".")
 			}
 			blockQuery := copyQuerySpec(querySpec)
 			blockSession := NewSessionSpec()
 			loadSpec := this_block.table.NewLoadSpec()
-			if *FLAGS.PATH_KEY != "" {
-				loadSpec.Str(*FLAGS.PATH_KEY)
+			if *Flags.PathKey != "" {
+				loadSpec.Str(*Flags.PathKey)
 			}
 
-			cols := strings.Split(*FLAGS.SessionCol, *FLAGS.FIELD_SEPARATOR)
+			cols := strings.Split(*Flags.SessionCol, *Flags.FieldSeparator)
 			for _, col := range cols {
 				loadSpec.Str(col)
 			}
-			loadSpec.Int(*FLAGS.TimeCol)
+			loadSpec.Int(*Flags.TimeCol)
 
 			filters := BuildFilters(this_block.table, &loadSpec, filterSpec)
 			blockQuery.Filters = filters
@@ -598,7 +598,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		if block_index%BLOCKS_BEFORE_GC == 0 && block_index > 0 {
 			wg.Wait()
 
-			if *FLAGS.DEBUG {
+			if *Flags.Debug {
 				fmt.Fprintf(os.Stderr, "+")
 			}
 
@@ -621,7 +621,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 	wg.Wait()
 
 	fmt.Fprintf(os.Stderr, "+")
-	session_cutoff := *FLAGS.SESSION_CUTOFF * 60
+	session_cutoff := *Flags.SessionCutOff * 60
 	masterSession.Sessions.NoMoreRecordsBefore(int(maxTime) + 2*session_cutoff)
 	masterSession.ExpireRecords()
 	fmt.Fprintf(os.Stderr, "\n")

@@ -10,7 +10,7 @@ import "sort"
 var (
 	cmdFuncs  = make(map[string]func())
 	cmdKeys   = make([]string, 0)
-	falseFlag = false
+	FalseFlag = false
 	trueFlag  = true
 	testMode  = false
 )

@@ -18,12 +18,13 @@ import (
 var (
 	debugTiming    = false
 	chunksBeforeGC = 16
-	ingestDir      = "ingest"
-	tempIngestDir  = ".ingest.temp"
-	cacheDir       = "cache"
+	// IngestDir ...
+	IngestDir     = "ingest"
+	tempIngestDir = ".ingest.temp"
+	cacheDir      = "cache"
 
 	DeleteBlocksAfterQuery = true
-	holdMatches            = false
+	HoldMatches            = false
 	blocksPerCacheFile     = 64
 )
 
@@ -40,7 +41,7 @@ func (t *Table) saveTableInfo(fname string) {
 
 	defer t.ReleaseInfoLock()
 	var network bytes.Buffer // Stand-in for the network.
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(*Flags.Dir, t.Name)
 	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))
 	backup := path.Join(dirname, fmt.Sprintf("%s.bak", fname))
 
@@ -127,7 +128,7 @@ func (t *Table) saverecordList(records recordList) bool {
 }
 
 func (t *Table) SaveRecordsToColumns() bool {
-	os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+	os.MkdirAll(path.Join(*Flags.Dir, t.Name), 0777)
 	sort.Sort(sortRecordsByTime{t.newRecords})
 
 	t.FillPartialBlock()
@@ -141,7 +142,7 @@ func (t *Table) SaveRecordsToColumns() bool {
 
 func (t *Table) LoadTableInfo() bool {
 	tablename := t.Name
-	filename := path.Join(*FLAGS.DIR, tablename, "info.db")
+	filename := path.Join(*Flags.Dir, tablename, "info.db")
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
@@ -204,7 +205,7 @@ func (t *Table) ReleaseRecords() {
 func (t *Table) HasFlagFile() bool {
 	// Make a determination of whether this is a new table or not. if it is a
 	// new table, we are fine, but if it's not - we are in trouble!
-	flagfile := path.Join(*FLAGS.DIR, t.Name, "info.db.exists")
+	flagfile := path.Join(*Flags.Dir, t.Name, "info.db.exists")
 	_, err := os.Open(flagfile)
 	// If the flagfile exists and we couldn't read the file info, we are in trouble!
 	if err == nil {
@@ -221,7 +222,7 @@ func file_looks_like_block(v os.FileInfo) bool {
 
 	switch {
 
-	case v.Name() == ingestDir || v.Name() == tempIngestDir:
+	case v.Name() == IngestDir || v.Name() == tempIngestDir:
 		return false
 	case v.Name() == cacheDir:
 		return false
@@ -251,14 +252,14 @@ func (t *Table) LoadBlockCache() {
 	}
 
 	defer t.ReleaseCacheLock()
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, cacheDir))
+	files, err := ioutil.ReadDir(path.Join(*Flags.Dir, t.Name, cacheDir))
 
 	if err != nil {
 		return
 	}
 
 	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, cacheDir, block_file.Name())
+		filename := path.Join(*Flags.Dir, t.Name, cacheDir, block_file.Name())
 		block_cache := SavedBlockCache{}
 		if err != nil {
 			continue
@@ -286,15 +287,15 @@ func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()
 
-	if *FLAGS.CACHED_QUERIES {
+	if *Flags.CachedQueries {
 		for blockName, blockQuery := range to_cache_specs {
 
-			if blockName == ingestDir {
+			if blockName == IngestDir {
 				continue
 			}
 
 			blockQuery.SaveCachedResults(blockName)
-			if *FLAGS.DEBUG {
+			if *Flags.Debug {
 				fmt.Fprint(os.Stderr, "s")
 			}
 		}
@@ -302,7 +303,7 @@ func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
 		saveend := time.Now()
 
 		if len(to_cache_specs) > 0 {
-			if *FLAGS.DEBUG {
+			if *Flags.Debug {
 				fmt.Fprint(os.Stderr, "\n")
 			}
 			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
@@ -361,9 +362,9 @@ func (t *Table) WriteBlockCache() {
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
-	Debug("LOADING", *FLAGS.DIR, t.Name)
+	Debug("LOADING", *Flags.Dir, t.Name)
 
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(*Flags.Dir, t.Name))
 
 	if readRowsOnly {
 		Debug("ONLY READING RECORDS FROM ROW STORE")
@@ -375,17 +376,17 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.Table = t
 	}
 
-	// Load and setup our OPTS.StrReplaceMENTS
-	OPTS.StrReplaceMENTS = make(map[string]StrReplace)
-	if FLAGS.StrReplace != nil {
-		var replacements = strings.Split(*FLAGS.StrReplace, *FLAGS.FIELD_SEPARATOR)
+	// Load and setup our Opts.StrReplaceMENTS
+	Opts.StrReplaceMENTS = make(map[string]StrReplace)
+	if Flags.StrReplace != nil {
+		var replacements = strings.Split(*Flags.StrReplace, *Flags.FieldSeparator)
 		for _, repl := range replacements {
 			tokens := strings.Split(repl, ":")
 			if len(tokens) > 2 {
 				col := tokens[0]
 				pattern := tokens[1]
 				replacement := tokens[2]
-				OPTS.StrReplaceMENTS[col] = StrReplace{pattern, replacement}
+				Opts.StrReplaceMENTS[col] = StrReplace{pattern, replacement}
 			}
 		}
 	}
@@ -401,7 +402,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 	}
 
-	if *FLAGS.UPDATE_TABLE_INFO {
+	if *Flags.UpdateTableInfo {
 		Debug("RESETTING TABLE INFO FOR OVERWRITING")
 		t.IntInfo = make(IntInfoTable)
 		t.StrInfo = make(StrInfoTable)
@@ -431,12 +432,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		// SAMPLES: reverse chronological order
 		// EVERYTHING ELSE: chronological order
 		v := files[f]
-		if OPTS.SAMPLES {
+		if Opts.SAMPLES {
 			v = files[len(files)-f-1]
 		}
 
 		if v.IsDir() && file_looks_like_block(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(*Flags.Dir, t.Name, v.Name())
 			this_block++
 
 			wg.Add(1)
@@ -474,7 +475,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					block = cachedBlock
 				}
 
-				if *FLAGS.DEBUG {
+				if *Flags.Debug {
 					if cachedSpec != nil {
 						fmt.Fprint(os.Stderr, "c")
 					} else {
@@ -503,7 +504,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							blockQuery = copyQuerySpec(querySpec)
 							blockQuery.MatchedCount = filterAndAggRecords(blockQuery, &block.recordList)
 
-							if holdMatches {
+							if HoldMatches {
 								block.Matched = blockQuery.Matched
 							}
 
@@ -529,11 +530,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				}
 
-				if OPTS.WRITE_BLOCK_INFO {
+				if Opts.WriteBlockInfo {
 					block.SaveInfoToColumns(block.Name)
 				}
 
-				if *FLAGS.EXPORT {
+				if *Flags.EXPORT {
 					block.ExportBlockData()
 				}
 				// don't delete when testing so we can verify block
@@ -551,26 +552,26 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}()
 
-			if *FLAGS.SAMPLES {
+			if *Flags.Samples {
 				wg.Wait()
 
-				if count > *FLAGS.LIMIT {
+				if count > *Flags.Limit {
 					break
 				}
 			}
 
-			if DeleteBlocksAfterQuery && this_block%chunksBeforeGC == 0 && *FLAGS.GC {
+			if DeleteBlocksAfterQuery && this_block%chunksBeforeGC == 0 && *Flags.GC {
 				wg.Wait()
 				start := time.Now()
 
-				if *FLAGS.RECYCLE_MEM == false {
+				if *Flags.RecycleMem == false {
 					m.Lock()
 					old_percent := debug.SetGCPercent(100)
 					debug.SetGCPercent(old_percent)
 					m.Unlock()
 				}
 
-				if *FLAGS.DEBUG {
+				if *Flags.Debug {
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end := time.Now()
@@ -583,7 +584,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	rowStoreQuery := AfterLoadQueryCB{}
 	var logend time.Time
 	logstart := time.Now()
-	if *FLAGS.READ_INGESTION_LOG {
+	if *Flags.ReadIngestionLog {
 		if querySpec == nil {
 			rowStoreQuery.querySpec = &QuerySpec{}
 			rowStoreQuery.querySpec.Table = t
@@ -596,12 +597,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		// Entrust AfterLoadQueryCB to call Done on wg
 		rowStoreQuery.wg = &wg
 		m.Lock()
-		blockSpecs[ingestDir] = rowStoreQuery.querySpec
+		blockSpecs[IngestDir] = rowStoreQuery.querySpec
 		m.Unlock()
 
 		wg.Add(1)
 		go func() {
-			t.LoadRowStoreRecords(ingestDir, rowStoreQuery.CB)
+			t.LoadRowStoreRecords(IngestDir, rowStoreQuery.CB)
 			m.Lock()
 			logend = time.Now()
 			m.Unlock()
@@ -610,7 +611,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	if *FLAGS.DEBUG {
+	if *Flags.Debug {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
@@ -618,7 +619,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		Debug("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
 	}
 
-	if *FLAGS.READ_INGESTION_LOG {
+	if *Flags.ReadIngestionLog {
 		m.Lock()
 		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
@@ -653,7 +654,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// bc combining results is not idempotent
 	t.WriteQueryCache(to_cache_specs)
 
-	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
+	if Flags.LoadAndQuery != nil && *Flags.LoadAndQuery == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		resultSpec := combineResults(querySpec, blockSpecs)
@@ -684,7 +685,7 @@ func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 func (t *Table) ChunkAndSave() {
 
 	if len(t.newRecords) >= CHUNK_SIZE {
-		os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+		os.MkdirAll(path.Join(*Flags.Dir, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
 			t.SaveRecordsToBlock(t.newRecords, name)
@@ -699,7 +700,7 @@ func (t *Table) ChunkAndSave() {
 }
 
 func (t *Table) IsNotExist() bool {
-	table_dir := path.Join(*FLAGS.DIR, t.Name)
+	table_dir := path.Join(*Flags.Dir, t.Name)
 	_, err := ioutil.ReadDir(table_dir)
 	return err != nil
 }

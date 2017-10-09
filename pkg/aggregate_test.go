@@ -125,7 +125,7 @@ func TestHistograms(test *testing.T) {
 
 	nt := save_and_reload_table(test, blockCount)
 	var HIST = "hist"
-	FLAGS.Op = &HIST
+	Flags.Op = &HIST
 
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
@@ -240,7 +240,7 @@ func TestTimeSeries(test *testing.T) {
 	nt := save_and_reload_table(test, blockCount)
 
 	hist := "hist"
-	FLAGS.Op = &hist
+	Flags.Op = &hist
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
@@ -254,7 +254,7 @@ func TestTimeSeries(test *testing.T) {
 
 	for _, b := range querySpec.TimeResults {
 		if len(b) <= 0 {
-			test.Error("TIME BUCKET IS INCORRECTLY EMPTY!")
+			test.Error("TIME BUCKET IS INCORRECTLY empty!")
 		}
 
 		for k, v := range b {

@@ -34,33 +34,34 @@ func runTrimCmdLine() {
 	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")
 	REALLY := flag.Bool("really", false, "don't prompt before deletion")
 
-	sybil.FLAGS.TimeCol = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
+	sybil.Flags.TimeCol = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" || *sybil.FLAGS.TimeCol == "" {
+	if *sybil.Flags.Table == "" || *sybil.Flags.TimeCol == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if *sybil.Flags.Profile {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DeleteBlocksAfterQuery = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*sybil.Flags.Table)
 	if t.LoadTableInfo() == false {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
 	loadSpec := t.NewLoadSpec()
-	loadSpec.Int(*sybil.FLAGS.TimeCol)
+	loadSpec.Int(*sybil.Flags.TimeCol)
 
 	trimSpec := sybil.TrimSpec{}
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
-	trimSpec.MBLimit = int64(*MB_LIMIT)
+	trimSpec.MBLimit =
+		int64(*MB_LIMIT)
 
 	to_trim := t.TrimTable(&trimSpec)
 

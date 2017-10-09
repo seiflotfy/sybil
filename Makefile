@@ -1,7 +1,7 @@
 BUILD_CMD = /usr/bin/go install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
-PROFILE = -tags profile
+Profile = -tags profile
 LUA = -tags lua
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 LDFLAGS=-all-static

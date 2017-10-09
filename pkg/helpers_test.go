@@ -22,7 +22,7 @@ func run_tests(m *testing.M) {
 
 func setup_test_vars(chunk_size int) {
 	Startup()
-	FLAGS.TABLE = &TEST_TABLE_NAME
+	Flags.Table = &TEST_TABLE_NAME
 
 	testMode = true
 	CHUNK_SIZE = chunk_size

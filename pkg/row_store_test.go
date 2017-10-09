@@ -9,23 +9,23 @@ import "testing"
 func TestTableLoadRowRecords(test *testing.T) {
 	delete_test_db()
 
-	block_count := 3
+	blockCount := 3
 	add_records(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	t.ingestRecords("ingest")
+	t.IngestRecords("ingest")
 
 	unload_test_table()
 	nt := GetTable(TEST_TABLE_NAME)
 
 	nt.LoadRecords(nil)
 
-	if len(nt.RowBlock.recordList) != CHUNK_SIZE*block_count {
+	if len(nt.RowBlock.recordList) != CHUNK_SIZE*blockCount {
 		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.recordList))
 	}
 

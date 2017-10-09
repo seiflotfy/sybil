@@ -4,27 +4,26 @@ package pkg
 
 import "github.com/pkg/profile"
 
-
 var PROFILER_ENABLED = true
-var PROFILE ProfilerStart
+var Profile ProfilerStart
 
 type PkgProfile struct {
 }
 
 func (p PkgProfile) Start() ProfilerStart {
-	if *FLAGS.PROFILE_MEM {
-		PROFILE = profile.Start(profile.MemProfile, profile.ProfilePath("."))
+	if *Flags.ProfileMem {
+		Profile = profile.Start(profile.MemProfile, profile.ProfilePath("."))
 	} else {
-		PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
+		Profile = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
 	}
-	return PROFILE
+	return Profile
 }
 func (p PkgProfile) Stop() {
 	p.Stop()
 }
 
 func STOP_PROFILER() {
-	PROFILE.Stop()
+	Profile.Stop()
 }
 
 var RUN_PROFILER = func() ProfilerStop {

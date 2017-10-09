@@ -37,14 +37,14 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Ints(keys)
 
 	Debug("RESULT COUNT", len(querySpec.TimeResults))
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			if *FLAGS.Op == "distinct" {
+			if *Flags.Op == "distinct" {
 				marshalled_results[key] = append(marshalled_results[key],
 					ResultJSON{"Distinct": len(v), "Count": len(v)})
 			} else {
@@ -71,11 +71,11 @@ func printTimeResults(querySpec *QuerySpec) {
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 1, 0, ' ', tabwriter.AlignRight)
 
-	for _, time_bucket := range keys {
-		results := querySpec.TimeResults[time_bucket]
-		time_str := time.Unix(int64(time_bucket), 0).Format(OPTS.TimeFormat)
+	for _, TimeBucket := range keys {
+		results := querySpec.TimeResults[TimeBucket]
+		time_str := time.Unix(int64(TimeBucket), 0).Format(Opts.TimeFormat)
 
-		if *FLAGS.Op == "distinct" {
+		if *Flags.Op == "distinct" {
 			fmt.Fprintln(w, time_str, "\t", len(results), "\t")
 		} else {
 			for _, r := range results {
@@ -111,7 +111,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *FLAGS.Op == "hist" {
+		if *Flags.Op == "hist" {
 			inner := make(ResultJSON)
 			res[agg.Name] = inner
 			h := r.Hists[agg.Name]
@@ -123,7 +123,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			}
 		}
 
-		if *FLAGS.Op == "avg" {
+		if *Flags.Op == "avg" {
 			result, ok := r.Hists[agg.Name]
 			if ok {
 				res[agg.Name] = result.Mean()
@@ -151,10 +151,10 @@ func printSortedResults(querySpec *QuerySpec) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		var results = make([]ResultJSON, 0)
 
-		if *FLAGS.Op == "distinct" {
+		if *Flags.Op == "distinct" {
 			results = append(results, ResultJSON{"Distinct": len(querySpec.Results)})
 
 		} else {
@@ -169,7 +169,7 @@ func printSortedResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.Op == "distinct" {
+	if *Flags.Op == "distinct" {
 		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
 	} else {
 		if len(sorted) > 1 {
@@ -189,7 +189,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf(fmt.Sprintf("%-20s", group_key)[:20])
 
 	fmt.Printf("%.0d", v.Count)
-	if OPTS.WEIGHT_COL {
+	if Opts.WeightCol {
 		fmt.Print(" (")
 		fmt.Print(v.Samples)
 		fmt.Print(")")
@@ -198,7 +198,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.Name)
-		if *FLAGS.Op == "hist" {
+		if *Flags.Op == "hist" {
 			h, ok := v.Hists[agg.Name]
 			if !ok {
 				Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
@@ -213,7 +213,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			} else {
 				fmt.Println(col_name, "No Data")
 			}
-		} else if *FLAGS.Op == "avg" {
+		} else if *Flags.Op == "avg" {
 			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
@@ -228,7 +228,7 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
@@ -241,7 +241,7 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if FLAGS.Op != nil && *FLAGS.Op == "distinct" {
+	if Flags.Op != nil && *Flags.Op == "distinct" {
 		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
 	} else {
 		count := 0
@@ -262,7 +262,7 @@ func PrintResults(querySpec *QuerySpec) {
 }
 
 func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.PRINT {
+	if *Flags.PRINT {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
@@ -341,7 +341,7 @@ func (r *Record) toSample() *Sample {
 
 func (t *Table) PrintSamples() {
 	count := 0
-	records := make(recordList, *FLAGS.LIMIT)
+	records := make(recordList, *Flags.Limit)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -349,7 +349,7 @@ func (t *Table) PrintSamples() {
 				break
 			}
 
-			if count >= *FLAGS.LIMIT {
+			if count >= *Flags.Limit {
 				break
 			}
 
@@ -357,12 +357,12 @@ func (t *Table) PrintSamples() {
 			count++
 		}
 
-		if count >= *FLAGS.LIMIT {
+		if count >= *Flags.Limit {
 			break
 		}
 	}
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		samples := make([]*Sample, 0)
 		for _, r := range records {
 			if r == nil {
@@ -387,7 +387,7 @@ func (t *Table) PrintSamples() {
 }
 
 func PrintTables() {
-	files, err := ioutil.ReadDir(*FLAGS.DIR)
+	files, err := ioutil.ReadDir(*Flags.Dir)
 	if err != nil {
 		Error("No tables found!")
 		return
@@ -399,7 +399,7 @@ func PrintTables() {
 		tables = append(tables, t.Name)
 	}
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -463,7 +463,7 @@ func (t *Table) PrintColInfo() {
 
 	}
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
 
@@ -501,7 +501,7 @@ func PrintVersionInfo() {
 
 	version_info := GetVersionInfo()
 
-	if *FLAGS.JSON {
+	if *Flags.JSON {
 		printJson(version_info)
 
 	} else {

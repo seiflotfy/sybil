@@ -24,9 +24,9 @@ type Histogram interface {
 
 func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.HDR_HIST && ENABLE_HDR {
+	if *Flags.HdrHist && ENABLE_HDR {
 		hist = newHDRHist(t, info)
-	} else if *FLAGS.LOG_HIST {
+	} else if *Flags.LogHist {
 		hist = t.NewMultiHist(info)
 	} else {
 		hist = t.NewBasicHist(info)

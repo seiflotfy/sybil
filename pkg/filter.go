@@ -25,20 +25,20 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
 	if filterSpec.Int != "" {
-		intfilters = strings.Split(filterSpec.Int, *FLAGS.FIELD_SEPARATOR)
+		intfilters = strings.Split(filterSpec.Int, *Flags.FieldSeparator)
 	}
 	if filterSpec.Str != "" {
-		strfilters = strings.Split(filterSpec.Str, *FLAGS.FIELD_SEPARATOR)
+		strfilters = strings.Split(filterSpec.Str, *Flags.FieldSeparator)
 	}
 
 	if filterSpec.Set != "" {
-		setfilters = strings.Split(filterSpec.Set, *FLAGS.FIELD_SEPARATOR)
+		setfilters = strings.Split(filterSpec.Set, *Flags.FieldSeparator)
 	}
 
 	filters := []Filter{}
 
 	for _, filt := range intfilters {
-		tokens := strings.Split(filt, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filt, *Flags.FilterSeparator)
 		col := tokens[0]
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
@@ -48,8 +48,8 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		}
 
 		// we align the Time Filter to the Time Bucket iff we are doing a time series query
-		if col == *FLAGS.TimeCol && *FLAGS.Time {
-			bucket := int64(*FLAGS.Time_BUCKET)
+		if col == *Flags.TimeCol && *Flags.Time {
+			bucket := int64(*Flags.TimeBucket)
 			new_val := int64(val/bucket) * bucket
 
 			if val != new_val {
@@ -63,7 +63,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range setfilters {
-		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *Flags.FilterSeparator)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]
@@ -78,7 +78,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range strfilters {
-		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *Flags.FilterSeparator)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]

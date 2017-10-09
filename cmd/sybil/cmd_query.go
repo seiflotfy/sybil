@@ -17,45 +17,45 @@ var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
 
-	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	sybil.Flags.PrintInfo = flag.Bool("info", false, "Print table info")
+	sybil.Flags.Sort = flag.String("sort", sybil.Opts.SortCount, "Int Column to sort by")
+	sybil.Flags.Limit = flag.Int("limit", 100, "Number of results to return")
 
-	sybil.FLAGS.Time = flag.Bool("time", false, "make a time rollup")
-	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.Time_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
-	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
+	sybil.Flags.Time = flag.Bool("time", false, "make a time rollup")
+	sybil.Flags.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	sybil.Flags.TimeBucket = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
+	sybil.Flags.WeightCol = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
-	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
-	sybil.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
+	sybil.Flags.Op = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	sybil.Flags.LogHist = flag.Bool("loghist", false, "Use nested logarithmic histograms")
 	if sybil.ENABLE_HDR {
-		sybil.FLAGS.HDR_HIST = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
+		sybil.Flags.HdrHist = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
 	}
 
-	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
-	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
-	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	sybil.Flags.PRINT = flag.Bool("print", true, "Print some records")
+	sybil.Flags.Samples = flag.Bool("samples", false, "Grab samples")
+	sybil.Flags.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
-	sybil.FLAGS.HIST_BUCKET = flag.Int("int-bucket", 0, "Int hist bucket size")
+	sybil.Flags.HistBucket = flag.Int("int-bucket", 0, "Int hist bucket size")
 
-	sybil.FLAGS.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	sybil.FLAGS.StrFilters = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
-	sybil.FLAGS.UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
+	sybil.Flags.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	sybil.Flags.StrFilters = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	sybil.Flags.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	sybil.Flags.UpdateTableInfo = flag.Bool("update-info", false, "Re-compute cached column data")
 
-	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
-	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
-	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
+	sybil.Flags.Ints = flag.String("int", "", "Integer values to aggregate")
+	sybil.Flags.Strs = flag.String("str", "", "String values to load")
+	sybil.Flags.Groups = flag.String("group", "", "values group by")
 
-	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
+	sybil.Flags.EXPORT = flag.Bool("export", false, "export data to TSV")
 
-	sybil.FLAGS.READ_ROWSTORE = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
+	sybil.Flags.ReadRowStore = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
 
-	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
-	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
+	sybil.Flags.JSON = flag.Bool("json", false, "Print results in JSON format")
+	sybil.Flags.ANOVA = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
-	if sybil.enableLua {
-		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
+	if sybil.EnableLua {
+		sybil.Flags.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
 	}
 
 	listTables = flag.Bool("tables", false, "List tables")
@@ -63,7 +63,7 @@ func addQueryFlags() {
 	TimeFormat = flag.String("time-format", "", "time format to use")
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
-	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
+	sybil.Flags.CachedQueries = flag.Bool("cache-queries", false, "Cache query results per block")
 
 }
 
@@ -77,10 +77,10 @@ func runQueryCmdLine() {
 	}
 
 	if *TimeFormat != "" {
-		sybil.OPTS.TimeFormat = sybil.GetTimeFormat(*TimeFormat)
+		sybil.Opts.TimeFormat = sybil.GetTimeFormat(*TimeFormat)
 	}
 
-	table := *sybil.FLAGS.TABLE
+	table := *sybil.Flags.Table
 	if table == "" {
 		flag.PrintDefaults()
 		return
@@ -88,45 +88,45 @@ func runQueryCmdLine() {
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
+		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.Flags.Dir)
 	}
 
 	ints := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
 
-	if *sybil.FLAGS.GROUPS != "" {
-		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
+	if *sybil.Flags.Groups != "" {
+		groups = strings.Split(*sybil.Flags.Groups, *sybil.Flags.FieldSeparator)
+		sybil.Opts.GroupBy = groups
 
 	}
 
-	if *sybil.FLAGS.LUAFILE != "" {
-		sybil.SetLuaScript(*sybil.FLAGS.LUAFILE)
+	if *sybil.Flags.LUAFILE != "" {
+		sybil.SetLuaScript(*sybil.Flags.LUAFILE)
 	}
 
 	if *NO_RECYCLE_MEM == true {
-		sybil.FLAGS.RECYCLE_MEM = &sybil.FALSE
+		sybil.Flags.RecycleMem = &sybil.FalseFlag
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
-	if *sybil.FLAGS.STRS != "" {
-		strs = strings.Split(*sybil.FLAGS.STRS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if *sybil.Flags.Strs != "" {
+		strs = strings.Split(*sybil.Flags.Strs, *sybil.Flags.FieldSeparator)
 	}
-	if *sybil.FLAGS.INTS != "" {
-		ints = strings.Split(*sybil.FLAGS.INTS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if *sybil.Flags.Ints != "" {
+		ints = strings.Split(*sybil.Flags.Ints, *sybil.Flags.FieldSeparator)
 	}
-	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
+	if *sybil.Flags.Profile && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	if *sybil.FLAGS.LOAD_THEN_QUERY {
-		sybil.FLAGS.LOAD_AND_QUERY = &falseFlag
+	if *sybil.Flags.LoadThenQuery {
+		sybil.Flags.LoadAndQuery = &FalseFlag
 	}
 
-	if *sybil.FLAGS.READ_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = &trueFlag
+	if *sybil.Flags.ReadRowStore {
+		sybil.Flags.ReadIngestionLog = &trueFlag
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -148,7 +148,7 @@ func runQueryCmdLine() {
 
 	aggs := []sybil.Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.OP))
+		aggs = append(aggs, t.Aggregation(agg, *sybil.Flags.Op))
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
@@ -165,7 +165,7 @@ func runQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.IntFilters, Str: *sybil.FLAGS.StrFilters, Set: *sybil.FLAGS.SetFilters}
+	filterSpec := sybil.FilterSpec{Int: *sybil.Flags.IntFilters, Str: *sybil.Flags.StrFilters, Set: *sybil.Flags.SetFilters}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
@@ -191,36 +191,36 @@ func runQueryCmdLine() {
 		loadSpec.Int(v)
 	}
 
-	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
-			loadSpec.Int(*sybil.FLAGS.SORT)
+	if *sybil.Flags.Sort != "" {
+		if *sybil.Flags.Sort != sybil.Opts.SortCount {
+			loadSpec.Int(*sybil.Flags.Sort)
 		}
-		querySpec.OrderBy = *sybil.FLAGS.SORT
+		querySpec.OrderBy = *sybil.Flags.Sort
 	} else {
 		querySpec.OrderBy = ""
 	}
 
-	if *sybil.FLAGS.Time {
+	if *sybil.Flags.Time {
 		// TODO: infer the TimeBucket size
-		querySpec.TimeBucket = *sybil.FLAGS.Time_BUCKET
+		querySpec.TimeBucket = *sybil.Flags.TimeBucket
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(*sybil.FLAGS.TimeCol)
-		TimeColID, ok := t.KeyTable[*sybil.FLAGS.TimeCol]
+		loadSpec.Int(*sybil.Flags.TimeCol)
+		TimeColID, ok := t.KeyTable[*sybil.Flags.TimeCol]
 		if ok {
-			sybil.OPTS.TimeColID = TimeColID
+			sybil.Opts.TimeColID = TimeColID
 		}
 	}
 
-	if *sybil.FLAGS.WEIGHT_COL != "" {
-		sybil.OPTS.WEIGHT_COL = true
-		loadSpec.Int(*sybil.FLAGS.WEIGHT_COL)
-		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
+	if *sybil.Flags.WeightCol != "" {
+		sybil.Opts.WeightCol = true
+		loadSpec.Int(*sybil.Flags.WeightCol)
+		sybil.Opts.WeightColID = t.KeyTable[*sybil.Flags.WeightCol]
 	}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = int16(*sybil.Flags.Limit)
 
-	if *sybil.FLAGS.SAMPLES {
-		sybil.HOLD_MATCHES = true
+	if *sybil.Flags.Samples {
+		sybil.HoldMatches = true
 		sybil.DeleteBlocksAfterQuery = false
 
 		loadSpec := t.NewLoadSpec()
@@ -233,11 +233,11 @@ func runQueryCmdLine() {
 		return
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if *sybil.Flags.EXPORT {
 		loadSpec.LoadAllColumns = true
 	}
 
-	if !*sybil.FLAGS.PRINT_INFO {
+	if !*sybil.Flags.PrintInfo {
 		// DISABLE GC FOR QUERY PATH
 		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
@@ -248,27 +248,27 @@ func runQueryCmdLine() {
 
 		start := time.Now()
 		// We can load and query at the same time
-		if *sybil.FLAGS.LOAD_AND_QUERY {
+		if *sybil.Flags.LoadAndQuery {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
 			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
 
-			if sybil.FLAGS.ANOVA_ICC != nil && *sybil.FLAGS.ANOVA_ICC {
+			if sybil.Flags.ANOVA != nil && *sybil.Flags.ANOVA {
 				querySpec.CalculateICC()
 			}
 		}
 
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if *sybil.Flags.EXPORT {
 		sybil.Print("EXPORTED RECORDS TO", path.Join(t.Name, "export"))
 	}
 
-	if *sybil.FLAGS.PRINT_INFO {
+	if *sybil.Flags.PrintInfo {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LOAD_AND_QUERY = &falseFlag
+		sybil.Flags.LoadAndQuery = &FalseFlag
 
 		t.LoadRecords(nil)
 		t.PrintColInfo()

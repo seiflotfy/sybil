@@ -3,7 +3,7 @@
 package pkg
 
 func initLua() {
-	enableLua = false
+	EnableLua = false
 }
 
 type LuaKey interface{}

@@ -9,17 +9,17 @@ func runRebuildCmdLine() {
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	if *sybil.Flags.Table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if *sybil.Flags.Profile {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*sybil.Flags.Table)
 
 	loaded := t.LoadTableInfo() && *FORCE_UPDATE == false
 	if loaded {

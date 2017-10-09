@@ -14,14 +14,14 @@ var readRowsOnly = false
 var minFilesToDigest = 0
 
 func (t *Table) getNewIngestBlockName() (string, error) {
-	Debug("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	name, err := ioutil.TempDir(path.Join(*FLAGS.DIR, t.Name), "block")
+	Debug("GETTING INGEST BLOCK NAME", *Flags.Dir, "TABLE", t.Name)
+	name, err := ioutil.TempDir(path.Join(*Flags.Dir, t.Name), "block")
 	return name, err
 }
 
 func (t *Table) getNewCacheBlockFile() (*os.File, error) {
-	Debug("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	tableCacheDir := path.Join(*FLAGS.DIR, t.Name, cacheDir)
+	Debug("GETTING CACHE BLOCK NAME", *Flags.Dir, "TABLE", t.Name)
+	tableCacheDir := path.Join(*Flags.Dir, t.Name, cacheDir)
 	os.MkdirAll(tableCacheDir, 0755)
 
 	// this info block needs to be moved once its finished being written to
@@ -30,7 +30,7 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) ingestRecords(blockname string) {
+func (t *Table) IngestRecords(blockname string) {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
@@ -45,10 +45,10 @@ func (t *Table) ingestRecords(blockname string) {
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
 func (t *Table) CompactRecords() {
-	FLAGS.READ_INGESTION_LOG = &trueFlag
+	Flags.ReadIngestionLog = &trueFlag
 	readRowsOnly = true
 	DeleteBlocksAfterQuery = false
-	holdMatches = true
+	HoldMatches = true
 
 	t.ResetBlockCache()
 	t.DigestRecords()
@@ -61,11 +61,11 @@ func (t *Table) CompactRecords() {
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
 func (t *Table) MaybeCompactRecords() {
-	if *FLAGS.SKIP_COMPACT == true {
+	if *Flags.SkipCompact == true {
 		return
 	}
 
-	if t.ShouldCompactRowStore(ingestDir) {
+	if t.ShouldCompactRowStore(IngestDir) {
 		t.CompactRecords()
 	}
 }
@@ -80,7 +80,7 @@ var SIZE_DIGEST_THRESHOLD = int64(1024) * 2
 var MAX_ROW_STORE_TRIES = 20
 
 func (t *Table) ShouldCompactRowStore(digest string) bool {
-	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
+	dirname := path.Join(*Flags.Dir, t.Name, digest)
 	// if the row store dir does not exist, skip the whole function
 	_, err := os.Stat(dirname)
 	if os.IsNotExist(err) {
@@ -123,7 +123,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 
 }
 func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
-	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
+	dirname := path.Join(*Flags.Dir, t.Name, digest)
 	var err error
 
 	// if the row store dir does not exist, skip the whole function
@@ -190,7 +190,7 @@ func LoadRowBlockCB(digestname string, records recordList) {
 		return
 	}
 
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*Flags.Table)
 	block := t.RowBlock
 
 	if len(records) > 0 {
@@ -208,10 +208,10 @@ func (t *Table) RestoreUningestedFiles() {
 		return
 	}
 
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
+	ingestdir := path.Join(*Flags.Dir, t.Name, IngestDir)
 	os.MkdirAll(ingestdir, 0777)
 
-	digesting := path.Join(*FLAGS.DIR, t.Name)
+	digesting := path.Join(*Flags.Dir, t.Name)
 	file, _ := os.Open(digesting)
 	dirs, _ := file.Readdir(0)
 
@@ -246,7 +246,7 @@ type SaveBlockChunkCB struct {
 
 func (cb *SaveBlockChunkCB) CB(digestname string, records recordList) {
 
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*Flags.Table)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
 			t.SaveRecordsToColumns()
@@ -290,8 +290,8 @@ func (t *Table) DigestRecords() {
 		return
 	}
 
-	dirname := path.Join(*FLAGS.DIR, t.Name)
-	digestfile := path.Join(dirname, ingestDir)
+	dirname := path.Join(*Flags.Dir, t.Name)
+	digestfile := path.Join(dirname, IngestDir)
 	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going

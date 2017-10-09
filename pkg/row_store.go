@@ -141,8 +141,8 @@ func (t *Table) AppendRecordsToLog(records recordList, blockname string) {
 	}
 
 	// TODO: fix this up, so that we don't
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, ingestDir)
-	tempingestdir := path.Join(*FLAGS.DIR, t.Name, tempIngestDir)
+	ingestdir := path.Join(*Flags.Dir, t.Name, IngestDir)
+	tempingestdir := path.Join(*Flags.Dir, t.Name, tempIngestDir)
 
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)

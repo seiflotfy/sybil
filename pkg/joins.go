@@ -3,7 +3,7 @@ package pkg
 import "strconv"
 
 func (t *Table) BuildJoinMap() {
-	joinkey := *FLAGS.JOIN_KEY
+	joinkey := *Flags.JoinKey
 	joinid := t.get_key_id(joinkey)
 
 	t.join_lookup = make(map[string]*Record)

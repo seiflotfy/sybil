@@ -152,12 +152,12 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	if op == "hist" {
 		agg.op_id = opHist
 		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
+		if *Flags.LogHist {
 			agg.HistType = "multi"
 
 		}
 
-		if *FLAGS.HDR_HIST {
+		if *Flags.HdrHist {
 			agg.HistType = "hdr"
 		}
 	}

@@ -23,12 +23,12 @@ var FORMATS = map[string]string{
 
 func GetTimeFormat(time_fmt string) string {
 	const_fmt := strings.ToLower(time_fmt)
-	time_format, ok := FORMATS[const_fmt]
+	TimeFormat, ok := FORMATS[const_fmt]
 	if ok {
-		Debug("USING TIME FORMAT", time_format, "FOR", time_fmt)
-		return time_format
+		Debug("USING TIME FORMAT", TimeFormat, "FOR", time_fmt)
+		return TimeFormat
 	}
 
-	Debug("USING TIME FORMAT", time_format)
-	return time_format
+	Debug("USING TIME FORMAT", TimeFormat)
+	return TimeFormat
 }
